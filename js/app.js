@@ -1,7 +1,10 @@
 /**
  * Master Application Coordinator
+ * Manages document rendering, localStorage persistence, and editor interactions.
  */
 const App = (() => {
+  const STORAGE_KEY = 'mdviewer_document';
+
   const viewer = document.getElementById('markdownViewer');
   const editorDrawer = document.getElementById('editorDrawer');
   const markdownInput = document.getElementById('markdownInput');
@@ -22,7 +25,6 @@ const App = (() => {
 
   let toastTimer;
 
-  // Sample demonstrating filenames in fences and filenames validated via regex from headings above
   const SAMPLE_MARKDOWN = `# MDViewer System Architecture
 A professional offline AMOLED markdown viewer with contextual code extraction.
 
@@ -101,6 +103,22 @@ echo "Backup saved to $BACKUP_DIR"
 
 Use the bottom-right **Code Copy Menu** or the copy button on any block header to copy code instantly.`;
 
+  function saveToStorage(content) {
+    try {
+      localStorage.setItem(STORAGE_KEY, content);
+    } catch {
+      // Graceful fallback for quota limits or restricted sandbox modes
+    }
+  }
+
+  function loadFromStorage() {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  }
+
   function showToast(message) {
     if (!toast) return;
     toast.textContent = message;
@@ -119,9 +137,13 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     statCodeCount.textContent = `${codeBlockCount} code blocks`;
   }
 
-  function renderMarkdownContent(source) {
+  function renderMarkdownContent(source, persist = true) {
     const { html, headings, codeBlocks } = MarkdownParser.parse(source);
     viewer.innerHTML = html;
+
+    if (persist) {
+      saveToStorage(source);
+    }
 
     // Attach copy handlers to individual block header buttons
     viewer.querySelectorAll('.code-block-copy').forEach((btn) => {
@@ -163,17 +185,18 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
   // Event Listeners
   openEditorBtn.addEventListener('click', openEditor);
   closeEditorBtn.addEventListener('click', closeEditor);
+
   sampleBtn.addEventListener('click', () => {
     markdownInput.value = SAMPLE_MARKDOWN;
-    renderMarkdownContent(SAMPLE_MARKDOWN);
+    renderMarkdownContent(SAMPLE_MARKDOWN, true);
     showToast('Loaded sample documentation');
   });
 
   applyEditorBtn.addEventListener('click', () => {
     const content = markdownInput.value;
-    renderMarkdownContent(content);
+    renderMarkdownContent(content, true);
     closeEditor();
-    showToast('Document rendered');
+    showToast('Saved and rendered');
   });
 
   clearEditorBtn.addEventListener('click', () => {
@@ -205,9 +228,11 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     }
   });
 
-  // Initial Boot
-  markdownInput.value = SAMPLE_MARKDOWN;
-  renderMarkdownContent(SAMPLE_MARKDOWN);
+  // Initial Boot: Check localStorage first, fallback to sample document
+  const storedDocument = loadFromStorage();
+  const initialContent = storedDocument !== null ? storedDocument : SAMPLE_MARKDOWN;
+  markdownInput.value = initialContent;
+  renderMarkdownContent(initialContent, false);
 
   return { showToast };
 })();
