@@ -116,19 +116,6 @@ html, body {
   font-weight: 600;
 }
 
-.badge {
-  font-size: 0.68rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--radius-pill);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-.offline-badge {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--accent-success);
-  border: 1px solid rgba(16, 185, 129, 0.22);
-}
-
 .stats-pill {
   display: flex;
   align-items: center;
