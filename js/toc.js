@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Provides non-truncated heading tree with search filtering and active scrolling.
+ * Formats inline backticks as styled code blocks in the outline tree.
  */
 const TocController = (() => {
   const container = document.getElementById('tocContainer');
@@ -9,6 +9,21 @@ const TocController = (() => {
 
   let headingElements = [];
   let currentFilter = '';
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatTocHtml(rawText) {
+    const escaped = escapeHtml(rawText);
+    // Replace backticked text with styled inline code chip
+    return escaped.replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
+  }
 
   function render(headings) {
     if (!container) return;
@@ -25,8 +40,10 @@ const TocController = (() => {
       link.href = `#${h.id}`;
       link.className = `toc-item toc-level-${h.level}`;
       link.dataset.targetId = h.id;
-      link.dataset.title = h.text.toLowerCase();
-      link.textContent = h.text;
+      // Plain text without backticks for seamless search matching
+      link.dataset.title = h.text.toLowerCase().replace(/`/g, '');
+      // Render as rich HTML with <code> tags instead of raw backticks
+      link.innerHTML = formatTocHtml(h.text);
 
       link.addEventListener('click', (e) => {
         e.preventDefault();
