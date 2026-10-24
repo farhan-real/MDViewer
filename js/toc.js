@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Formats inline backticks as styled code blocks in the outline tree and exposes global controller.
+ * Formats inline backticks as styled code blocks in the outline tree and prevents focus outlines.
  */
 const TocController = (() => {
   const container = document.getElementById('tocContainer');
@@ -41,9 +41,21 @@ const TocController = (() => {
       link.dataset.targetId = h.id;
       link.dataset.title = h.text.toLowerCase().replace(/`/g, '');
       link.innerHTML = formatTocHtml(h.text);
+      link.setAttribute('tabindex', '-1');
+
+      // Prevent browser from acquiring persistent focus on mouse interactions
+      link.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+      });
 
       link.addEventListener('click', (e) => {
         e.preventDefault();
+        link.blur();
+
+        if (document.activeElement && document.activeElement !== document.body) {
+          document.activeElement.blur();
+        }
+
         const target = document.getElementById(h.id);
         if (target) {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -80,8 +92,14 @@ const TocController = (() => {
         item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       } else {
         item.classList.remove('active');
+        item.blur();
       }
     });
+
+    // Clear stale focus from any active element inside TOC
+    if (document.activeElement && document.activeElement.classList.contains('toc-item')) {
+      document.activeElement.blur();
+    }
   }
 
   function attachObserver() {

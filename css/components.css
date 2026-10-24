@@ -59,6 +59,21 @@
   flex-direction: column;
   gap: 0.25rem;
 }
+
+/* TOC Items with Zero Focus-Ring Artifacts */
+.toc-item,
+.toc-item *,
+.toc-item:focus,
+.toc-item:focus-visible,
+.toc-item:focus-within,
+.toc-item:active {
+  outline: none !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
 .toc-item {
   display: block;
   width: 100%;
@@ -73,6 +88,7 @@
   overflow-wrap: break-word;
   word-break: break-word;
   border-left: 2px solid transparent;
+  user-select: none;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 .toc-item:hover { color: #ffffff; background: #111116; }
