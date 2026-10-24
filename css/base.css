@@ -1,5 +1,7 @@
 /* AMOLED Black Professional Base System */
 :root {
+  color-scheme: dark;
+
   --bg-core: #000000;
   --bg-sidebar: #050505;
   --bg-card: #0a0a0c;
