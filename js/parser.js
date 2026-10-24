@@ -66,6 +66,7 @@ const MarkdownParser = (() => {
     let inTable = false;
     let tableBuffer = [];
     let lastHeading = '';
+    let lastHeadingId = '';
 
     function flushList() {
       if (inList) {
@@ -150,6 +151,7 @@ const MarkdownParser = (() => {
             language: lang,
             name: displayName,
             parentHeading: lastHeading || 'General',
+            parentHeadingId: lastHeadingId || '',
             hasDirectFilename: Boolean(filename),
             code: rawCode
           });
@@ -205,6 +207,7 @@ const MarkdownParser = (() => {
         const text = headingMatch[2].trim();
         const slug = slugify(text) || `heading-${headings.length}`;
         lastHeading = text;
+        lastHeadingId = slug;
         headings.push({ level, text, id: slug });
         html += `<h${level} id="${slug}">${parseInline(text)}</h${level}>\n`;
         continue;

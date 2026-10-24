@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Formats inline backticks as styled code blocks in the outline tree.
+ * Formats inline backticks as styled code blocks in the outline tree and exposes global controller.
  */
 const TocController = (() => {
   const container = document.getElementById('tocContainer');
@@ -21,7 +21,6 @@ const TocController = (() => {
 
   function formatTocHtml(rawText) {
     const escaped = escapeHtml(rawText);
-    // Replace backticked text with styled inline code chip
     return escaped.replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
   }
 
@@ -40,9 +39,7 @@ const TocController = (() => {
       link.href = `#${h.id}`;
       link.className = `toc-item toc-level-${h.level}`;
       link.dataset.targetId = h.id;
-      // Plain text without backticks for seamless search matching
       link.dataset.title = h.text.toLowerCase().replace(/`/g, '');
-      // Render as rich HTML with <code> tags instead of raw backticks
       link.innerHTML = formatTocHtml(h.text);
 
       link.addEventListener('click', (e) => {
@@ -52,6 +49,12 @@ const TocController = (() => {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           history.replaceState(null, '', `#${h.id}`);
           setActive(h.id);
+
+          // Instantly sync the Code Copy Menu to this heading's code block
+          const nav = window.CodeNavigator || (typeof CodeNavigator !== 'undefined' ? CodeNavigator : null);
+          if (nav && typeof nav.syncToHeadingId === 'function') {
+            nav.syncToHeadingId(h.id);
+          }
 
           // Auto-close drawer on mobile when an item is selected
           if (window.innerWidth <= 768) {
@@ -69,6 +72,7 @@ const TocController = (() => {
   }
 
   function setActive(id) {
+    if (!container || !id) return;
     const items = container.querySelectorAll('.toc-item');
     items.forEach((item) => {
       if (item.dataset.targetId === id) {
@@ -96,9 +100,11 @@ const TocController = (() => {
 
   function syncScrollspy() {
     const scrollContainer = document.getElementById('viewerWorkspace');
-    const scrollY = scrollContainer.scrollTop + 80;
+    if (!scrollContainer || !headingElements.length) return;
 
+    const scrollY = scrollContainer.scrollTop + 80;
     let activeId = null;
+
     for (let i = 0; i < headingElements.length; i++) {
       const heading = headingElements[i];
       if (heading.offsetTop <= scrollY) {
@@ -130,3 +136,6 @@ const TocController = (() => {
 
   return { render, setActive };
 })();
+
+// Explicitly register on global scope
+window.TocController = TocController;

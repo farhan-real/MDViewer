@@ -1,6 +1,6 @@
 /**
  * Simple Code Copy Menu Controller
- * Displays block sequence, regex-validated filename / heading above, and synchronizes with viewport scroll.
+ * Displays block sequence, regex-validated filename / heading above, and synchronizes instantly with TOC and scroll.
  */
 const CodeNavigator = (() => {
   let blocks = [];
@@ -53,6 +53,20 @@ const CodeNavigator = (() => {
     copyBtn.disabled = false;
   }
 
+  function getHeadingIdForBlock(block) {
+    if (block && block.parentHeadingId) return block.parentHeadingId;
+    const el = document.getElementById(block.id);
+    if (!el) return null;
+    let prev = el.previousElementSibling;
+    while (prev) {
+      if (/^H[1-6]$/i.test(prev.tagName) && prev.id) {
+        return prev.id;
+      }
+      prev = prev.previousElementSibling;
+    }
+    return null;
+  }
+
   function attachScrollspy() {
     const scrollContainer = document.getElementById('viewerWorkspace');
     if (!scrollContainer) return;
@@ -70,7 +84,6 @@ const CodeNavigator = (() => {
     const scrollContainer = document.getElementById('viewerWorkspace');
     if (!scrollContainer) return;
 
-    // Viewport target line at ~40% of the visible container height
     const scrollTarget = scrollContainer.scrollTop + (scrollContainer.clientHeight * 0.4);
     let targetIndex = 0;
 
@@ -86,6 +99,14 @@ const CodeNavigator = (() => {
     if (targetIndex !== activeIndex) {
       activeIndex = targetIndex;
       updateUI();
+
+      // Synchronize TOC heading with active scrolling code block
+      const current = blocks[activeIndex];
+      const headingId = getHeadingIdForBlock(current);
+      const toc = window.TocController || (typeof TocController !== 'undefined' ? TocController : null);
+      if (toc && headingId) {
+        toc.setActive(headingId);
+      }
     }
   }
 
@@ -95,6 +116,14 @@ const CodeNavigator = (() => {
     updateUI();
 
     const current = blocks[activeIndex];
+
+    // Instantly update the TOC active heading when jumping via shortcuts or buttons
+    const headingId = getHeadingIdForBlock(current);
+    const toc = window.TocController || (typeof TocController !== 'undefined' ? TocController : null);
+    if (toc && headingId) {
+      toc.setActive(headingId);
+    }
+
     const el = document.getElementById(current.id);
 
     if (el && scroll) {
@@ -108,7 +137,34 @@ const CodeNavigator = (() => {
       scrollReleaseTimer = setTimeout(() => {
         isUserScrolling = true;
         el.classList.remove('target-highlight');
-      }, 750);
+      }, 650);
+    }
+  }
+
+  function syncToHeadingId(headingId) {
+    if (!blocks.length || !headingId) return;
+
+    // 1. Direct match by parent heading ID
+    let targetIndex = blocks.findIndex(b => b.parentHeadingId === headingId);
+
+    // 2. Fallback: match by position relative to heading element
+    if (targetIndex === -1) {
+      const hEl = document.getElementById(headingId);
+      if (hEl) {
+        const hTop = hEl.offsetTop;
+        for (let i = 0; i < blocks.length; i++) {
+          const bEl = document.getElementById(blocks[i].id);
+          if (bEl && bEl.offsetTop >= hTop) {
+            targetIndex = i;
+            break;
+          }
+        }
+        if (targetIndex === -1) targetIndex = blocks.length - 1;
+      }
+    }
+
+    if (targetIndex !== -1 && targetIndex !== activeIndex) {
+      jumpTo(targetIndex, false);
     }
   }
 
@@ -162,7 +218,6 @@ const CodeNavigator = (() => {
 
   // Keyboard navigation for P (prev), N (next), and C (copy)
   window.addEventListener('keydown', (e) => {
-    // Avoid triggering while typing inside input fields or dialog textareas
     if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
@@ -179,5 +234,8 @@ const CodeNavigator = (() => {
     }
   });
 
-  return { init, jumpTo, next, prev, copyActive };
+  return { init, jumpTo, next, prev, copyActive, syncToHeadingId };
 })();
+
+// Explicitly register on global scope
+window.CodeNavigator = CodeNavigator;
