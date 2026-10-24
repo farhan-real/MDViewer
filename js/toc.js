@@ -82,10 +82,10 @@ const TocController = (() => {
     if (!scrollContainer) return;
 
     let debounceTimer;
-    scrollContainer.onscroll = () => {
+    scrollContainer.addEventListener('scroll', () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(syncScrollspy, 30);
-    };
+      debounceTimer = setTimeout(syncScrollspy, 25);
+    }, { passive: true });
   }
 
   function syncScrollspy() {

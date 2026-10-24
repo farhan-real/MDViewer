@@ -1,10 +1,12 @@
 /**
  * Simple Code Copy Menu Controller
- * Displays block sequence, regex-validated filename / heading above, and handles navigation.
+ * Displays block sequence, regex-validated filename / heading above, and synchronizes with viewport scroll.
  */
 const CodeNavigator = (() => {
   let blocks = [];
   let activeIndex = 0;
+  let isUserScrolling = true;
+  let scrollReleaseTimer;
 
   const menu = document.getElementById('codeCopyMenu');
   const posBadge = document.getElementById('codeNavPosition');
@@ -25,6 +27,7 @@ const CodeNavigator = (() => {
 
     menu.style.display = 'flex';
     updateUI();
+    attachScrollspy();
   }
 
   function updateUI() {
@@ -50,6 +53,42 @@ const CodeNavigator = (() => {
     copyBtn.disabled = false;
   }
 
+  function attachScrollspy() {
+    const scrollContainer = document.getElementById('viewerWorkspace');
+    if (!scrollContainer) return;
+
+    let debounceTimer;
+    scrollContainer.addEventListener('scroll', () => {
+      if (!isUserScrolling) return;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(syncScrollPosition, 25);
+    }, { passive: true });
+  }
+
+  function syncScrollPosition() {
+    if (!blocks.length) return;
+    const scrollContainer = document.getElementById('viewerWorkspace');
+    if (!scrollContainer) return;
+
+    // Viewport target line at ~40% of the visible container height
+    const scrollTarget = scrollContainer.scrollTop + (scrollContainer.clientHeight * 0.4);
+    let targetIndex = 0;
+
+    for (let i = 0; i < blocks.length; i++) {
+      const el = document.getElementById(blocks[i].id);
+      if (el && el.offsetTop <= scrollTarget) {
+        targetIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    if (targetIndex !== activeIndex) {
+      activeIndex = targetIndex;
+      updateUI();
+    }
+  }
+
   function jumpTo(index, scroll = true) {
     if (index < 0 || index >= blocks.length) return;
     activeIndex = index;
@@ -59,13 +98,17 @@ const CodeNavigator = (() => {
     const el = document.getElementById(current.id);
 
     if (el && scroll) {
+      isUserScrolling = false;
+      clearTimeout(scrollReleaseTimer);
+
       document.querySelectorAll('.code-card').forEach(c => c.classList.remove('target-highlight'));
       el.classList.add('target-highlight');
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      setTimeout(() => {
+      scrollReleaseTimer = setTimeout(() => {
+        isUserScrolling = true;
         el.classList.remove('target-highlight');
-      }, 1500);
+      }, 750);
     }
   }
 
