@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>MDViewer // Professional Offline Markdown Viewer</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body class="dark-theme">
+  <header class="app-header">
+    <div class="header-left">
+      <button id="toggleSidebarBtn" class="icon-btn" aria-label="Toggle Table of Contents" title="Toggle TOC">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div class="brand">
+        <span class="brand-badge">MD</span>
+        <span class="brand-title">MDViewer</span>
+        <span class="badge offline-badge">Offline</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="stats-pill" id="docStats">
+        <span id="statWords">0 words</span>
+        <span class="stat-sep">•</span>
+        <span id="statReadTime">0 min read</span>
+        <span class="stat-sep">•</span>
+        <span id="statCodeCount">0 code blocks</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button id="sampleBtn" class="btn ghost-btn" title="Load sample document">Load Sample</button>
+      <button id="openEditorBtn" class="btn primary-btn" title="Paste or edit markdown">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        <span>Paste / Edit</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <!-- Left Sidebar: Table of Contents -->
+    <aside id="tocSidebar" class="toc-sidebar">
+      <div class="toc-header">
+        <div class="toc-title-row">
+          <span class="toc-heading">Index Outline</span>
+          <span id="tocCounter" class="chip">0 items</span>
+        </div>
+        <div class="toc-search-box">
+          <input type="search" id="tocFilterInput" placeholder="Filter headings..." autocomplete="off">
+        </div>
+      </div>
+      <nav id="tocContainer" class="toc-container" aria-label="Table of Contents">
+        <!-- Rendered dynamically -->
+      </nav>
+    </aside>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
+    <!-- Main Markdown Viewer Area -->
+    <main class="viewer-workspace" id="viewerWorkspace">
+      <article id="markdownViewer" class="markdown-viewer">
+        <!-- Markdown rendered content injected here -->
+      </article>
+    </main>
+  </div>
+
+  <!-- Dedicated Simple Code Copy Menu -->
+  <aside id="codeCopyMenu" class="code-copy-menu" aria-label="Code Block Navigator">
+    <div class="code-nav-section nav-counter-area">
+      <span class="nav-tag">CODE</span>
+      <span id="codeNavPosition" class="code-nav-badge">0 / 0</span>
+    </div>
+
+    <div class="code-nav-section nav-info-area" id="codeNavContext" title="Current Code Block Name">
+      <span class="nav-symbol">§</span>
+      <span id="codeNavTitle" class="nav-title-text">No code blocks</span>
+    </div>
+
+    <div class="code-nav-section nav-actions-area">
+      <button id="codePrevBtn" class="icon-nav-btn" aria-label="Previous Code Block" title="Previous Block (Alt+[)">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <button id="codeNextBtn" class="icon-nav-btn" aria-label="Next Code Block" title="Next Block (Alt+])">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+      <button id="codeCopyBtn" class="copy-action-btn" aria-label="Copy Active Code" title="Copy Active Block">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span id="codeCopyBtnText">Copy</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Markdown Input Drawer / Modal -->
+  <section id="editorDrawer" class="editor-drawer" aria-hidden="true">
+    <div class="editor-header">
+      <div class="editor-title-wrap">
+        <h3>Paste Markdown Source</h3>
+        <span class="editor-subtitle">Local rendering with automatic heading filename detection</span>
+      </div>
+      <div class="editor-actions">
+        <button id="pasteClipboardBtn" class="btn secondary-btn" title="Paste from clipboard">
+          <span>Paste Clipboard</span>
+        </button>
+        <button id="clearEditorBtn" class="btn ghost-btn">Clear</button>
+        <button id="closeEditorBtn" class="icon-btn" aria-label="Close Editor">&times;</button>
+      </div>
+    </div>
+    <div class="editor-body">
+      <textarea id="markdownInput" placeholder="Paste your raw Markdown here..." spellcheck="false"></textarea>
+    </div>
+    <div class="editor-footer">
+      <div class="editor-footer-left">
+        <span class="hint">Shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to render</span>
+      </div>
+      <div class="editor-footer-right">
+        <button id="applyEditorBtn" class="btn primary-btn">Render Document</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notification Toast -->
+  <div id="toastNotification" class="toast-notification" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="js/parser.js"></script>
+  <script src="js/toc.js"></script>
+  <script src="js/codenav.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+/* AMOLED Black Professional Base System */
+:root {
+  --bg-core: #000000;
+  --bg-sidebar: #050505;
+  --bg-card: #0a0a0c;
+  --bg-card-hover: #121216;
+  --bg-code-header: #0e0e12;
+  --bg-code-body: #020203;
+  --bg-floating: #0a0a0d;
+  --bg-modal: #08080a;
+
+  --border-dim: #1c1c22;
+  --border-mid: #272730;
+  --border-focus: #6366f1;
+
+  /* Professional Indigo / Cobalt Palette */
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-secondary: #3b82f6;
+  --accent-surface: rgba(99, 102, 241, 0.08);
+  --accent-border: rgba(99, 102, 241, 0.28);
+  --accent-success: #10b981;
+
+  --text-main: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --text-faint: #52525b;
+  --text-link: #818cf8;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+
+  --sidebar-w: 290px;
+  --header-h: 54px;
+  --transition-fast: 140ms ease;
+  --transition-smooth: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-core);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Crisp Clean Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-mid);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Header */
+.app-header {
+  height: var(--header-h);
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  z-index: 30;
+  position: relative;
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.brand-badge {
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+.brand-title {
+  font-size: 0.98rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.badge {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.offline-badge {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent-success);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+}
+
+.stats-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #08080a;
+  border: 1px solid var(--border-dim);
+  padding: 0.3rem 0.85rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+.stat-sep {
+  color: var(--text-faint);
+}
+
+/* Base Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+.primary-btn {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+}
+.primary-btn:hover {
+  background: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
+}
+.secondary-btn {
+  background: #111116;
+  color: var(--text-main);
+  border-color: var(--border-mid);
+}
+.secondary-btn:hover {
+  background: #181820;
+  border-color: var(--text-muted);
+}
+.ghost-btn {
+  background: transparent;
+  color: var(--text-muted);
+}
+.ghost-btn:hover {
+  color: var(--text-main);
+  background: #111116;
+}
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--border-dim);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+.icon-btn:hover {
+  color: var(--text-main);
+  background: #111116;
+  border-color: var(--border-mid);
+}
+
+/* Master App Layout */
+.app-body {
+  height: calc(100vh - var(--header-h));
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-core);
+}
+
+.viewer-workspace {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2.25rem 2rem 7rem 2rem;
+  scroll-behavior: smooth;
+  display: flex;
+  justify-content: center;
+  background-color: var(--bg-core);
+}
+
+.markdown-viewer {
+  width: 100%;
+  max-width: 840px;
+}
+
+@media (max-width: 768px) {
+  .header-center {
+    display: none;
+  }
+  .viewer-workspace {
+    padding: 1.25rem 1rem 6.5rem 1rem;
+  }
+}
