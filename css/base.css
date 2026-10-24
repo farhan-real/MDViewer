@@ -48,9 +48,21 @@
   padding: 0;
 }
 
-html, body {
+html {
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-core);
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   background-color: var(--bg-core);
   color: var(--text-main);
@@ -77,9 +89,11 @@ html, body {
   background: #3f3f46;
 }
 
-/* Header */
+/* Header - Fixed to Top Flow */
 .app-header {
+  flex-shrink: 0;
   height: var(--header-h);
+  width: 100%;
   background: var(--bg-sidebar);
   border-bottom: 1.5px solid var(--border-dim);
   display: flex;
@@ -193,7 +207,9 @@ html, body {
 
 /* Master App Layout */
 .app-body {
-  height: calc(100vh - var(--header-h));
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   display: flex;
   position: relative;
   overflow: hidden;
@@ -205,7 +221,7 @@ html, body {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 2.25rem 2rem 7rem 2rem;
+  padding: 2.25rem 2rem 14rem 2rem;
   scroll-behavior: smooth;
   display: flex;
   justify-content: center;
@@ -222,6 +238,6 @@ html, body {
     display: none;
   }
   .viewer-workspace {
-    padding: 1.25rem 1rem 6.5rem 1rem;
+    padding: 1.25rem 1rem 12rem 1rem;
   }
 }

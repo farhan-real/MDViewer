@@ -39,6 +39,15 @@ const TocController = (() => {
     clearTimeout(lockTimer);
   }
 
+  function scrollToElementTop(scrollContainer, target) {
+    if (!scrollContainer || !target) return;
+    const tRect = target.getBoundingClientRect();
+    const cRect = scrollContainer.getBoundingClientRect();
+    const targetY = scrollContainer.scrollTop + (tRect.top - cRect.top) - 20;
+    scrollContainer.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
+  }
+
   function render(headings) {
     if (!container) return;
     container.innerHTML = '';
@@ -72,12 +81,12 @@ const TocController = (() => {
         }
 
         const target = document.getElementById(h.id);
-        if (target) {
-          // Lock scrollspy to prevent intermediate scroll flicker
+        const scrollContainer = document.getElementById('viewerWorkspace');
+        if (target && scrollContainer) {
           lockScrollspy(700);
           setActive(h.id);
 
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          scrollToElementTop(scrollContainer, target);
           history.replaceState(null, '', `#${h.id}`);
 
           // Instantly sync the Code Copy Menu to this heading's code block
@@ -129,13 +138,11 @@ const TocController = (() => {
 
     let debounceTimer;
     scrollContainer.addEventListener('scroll', () => {
-      // Suppress scrollspy during programmatic jumps to eliminate flickering
       if (isProgrammaticScroll) return;
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(syncScrollspy, 25);
     }, { passive: true });
 
-    // Release lock as soon as the smooth scroll animation completes
     scrollContainer.addEventListener('scrollend', () => {
       unlockScrollspy();
     }, { passive: true });

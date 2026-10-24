@@ -61,16 +61,9 @@
 }
 
 /* TOC Items with Zero Focus-Ring Artifacts */
-.toc-item,
-.toc-item *,
-.toc-item:focus,
-.toc-item:focus-visible,
-.toc-item:focus-within,
-.toc-item:active {
+.toc-item, .toc-item *, .toc-item:focus, .toc-item:focus-visible, .toc-item:active {
   outline: none !important;
   outline-width: 0 !important;
-  outline-style: none !important;
-  outline-color: transparent !important;
   box-shadow: none !important;
   -webkit-tap-highlight-color: transparent !important;
 }
@@ -179,6 +172,13 @@
   border-radius: 4px;
   font-family: var(--font-mono);
   font-size: 0.87em;
+}
+
+/* Bottom Clearance Spacer for Guaranteed Last-Item Visibility */
+.markdown-viewer::after {
+  content: "";
+  display: block;
+  height: clamp(6rem, 15vh, 10rem);
 }
 
 /* Distinct Code Card Container */

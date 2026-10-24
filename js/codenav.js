@@ -1,6 +1,6 @@
 /**
  * Simple Code Copy Menu Controller
- * Displays block sequence, regex-validated filename / heading above, and synchronizes instantly with TOC and scroll.
+ * Displays block sequence, regex-validated filename / heading above, and synchronizes via container-scoped scrolling.
  */
 const CodeNavigator = (() => {
   let blocks = [];
@@ -65,6 +65,15 @@ const CodeNavigator = (() => {
       prev = prev.previousElementSibling;
     }
     return null;
+  }
+
+  function scrollToElementCenter(container, el) {
+    if (!container || !el) return;
+    const elRect = el.getBoundingClientRect();
+    const cRect = container.getBoundingClientRect();
+    const targetY = container.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2);
+    container.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
   }
 
   function attachScrollspy() {
@@ -134,14 +143,15 @@ const CodeNavigator = (() => {
     }
 
     const el = document.getElementById(current.id);
+    const scrollContainer = document.getElementById('viewerWorkspace');
 
-    if (el && scroll) {
+    if (el && scroll && scrollContainer) {
       isUserScrolling = false;
       clearTimeout(scrollReleaseTimer);
 
       document.querySelectorAll('.code-card').forEach(c => c.classList.remove('target-highlight'));
       el.classList.add('target-highlight');
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollToElementCenter(scrollContainer, el);
 
       scrollReleaseTimer = setTimeout(() => {
         isUserScrolling = true;
