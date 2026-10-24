@@ -4,13 +4,13 @@
   --bg-sidebar: #050505;
   --bg-card: #0a0a0c;
   --bg-card-hover: #121216;
-  --bg-code-header: #0e0e12;
-  --bg-code-body: #020203;
+  --bg-code-header: #14141b;
+  --bg-code-body: #0d0d13;
   --bg-floating: #0a0a0d;
   --bg-modal: #08080a;
 
-  --border-dim: #1c1c22;
-  --border-mid: #272730;
+  --border-dim: #22222b;
+  --border-mid: #2e2e3b;
   --border-focus: #6366f1;
 
   /* Professional Indigo / Cobalt Palette */
@@ -79,7 +79,7 @@ html, body {
 .app-header {
   height: var(--header-h);
   background: var(--bg-sidebar);
-  border-bottom: 1px solid var(--border-dim);
+  border-bottom: 1.5px solid var(--border-dim);
   display: flex;
   align-items: center;
   justify-content: space-between;
