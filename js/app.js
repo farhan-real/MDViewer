@@ -1,6 +1,6 @@
 /**
  * Master Application Coordinator
- * Manages document rendering, modal dialogs, and localStorage persistence.
+ * Manages document rendering, modal dialogs, sidebar states, and localStorage persistence.
  */
 const App = (() => {
   const STORAGE_KEY = 'mdviewer_document';
@@ -179,8 +179,12 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
   }
 
   function toggleSidebar() {
-    tocSidebar.classList.toggle('open');
-    sidebarBackdrop.classList.toggle('active');
+    if (window.innerWidth <= 768) {
+      const isOpen = tocSidebar.classList.toggle('open');
+      sidebarBackdrop.classList.toggle('active', isOpen);
+    } else {
+      tocSidebar.classList.toggle('collapsed');
+    }
   }
 
   // Event Listeners
@@ -224,7 +228,18 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
   });
 
   toggleSidebarBtn.addEventListener('click', toggleSidebar);
-  sidebarBackdrop.addEventListener('click', toggleSidebar);
+  sidebarBackdrop.addEventListener('click', () => {
+    tocSidebar.classList.remove('open');
+    sidebarBackdrop.classList.remove('active');
+  });
+
+  // Reset mobile states on viewport resize
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+      tocSidebar.classList.remove('open');
+      sidebarBackdrop.classList.remove('active');
+    }
+  });
 
   // Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {

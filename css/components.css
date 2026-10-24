@@ -7,8 +7,12 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: transform var(--transition-smooth);
+  transition: transform var(--transition-smooth), margin-left var(--transition-smooth);
   z-index: 25;
+}
+.toc-sidebar.collapsed {
+  margin-left: calc(-1 * var(--sidebar-w));
+  pointer-events: none;
 }
 .toc-header {
   padding: 1rem 1.15rem;
@@ -453,7 +457,9 @@
     left: 0;
     top: 0;
     bottom: 0;
+    margin-left: 0;
     transform: translateX(-100%);
+    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.9);
   }
   .toc-sidebar.open { transform: translateX(0); }
   .sidebar-backdrop.active { display: block; }

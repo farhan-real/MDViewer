@@ -52,6 +52,12 @@ const TocController = (() => {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           history.replaceState(null, '', `#${h.id}`);
           setActive(h.id);
+
+          // Auto-close drawer on mobile when an item is selected
+          if (window.innerWidth <= 768) {
+            document.getElementById('tocSidebar')?.classList.remove('open');
+            document.getElementById('sidebarBackdrop')?.classList.remove('active');
+          }
         }
       });
 
