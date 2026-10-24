@@ -64,7 +64,7 @@
   width: 100%;
   padding: 0.45rem 0.65rem;
   border-radius: var(--radius-sm);
-  color: var(--text-muted);
+  color: #d4d4d8;
   text-decoration: none;
   font-size: 0.82rem;
   font-weight: 500;
@@ -75,17 +75,17 @@
   border-left: 2px solid transparent;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
-.toc-item:hover { color: var(--text-main); background: #111116; }
+.toc-item:hover { color: #ffffff; background: #111116; }
 .toc-item.active {
   color: #ffffff;
   background: var(--accent-surface);
   border-left-color: var(--accent-primary);
   font-weight: 600;
 }
-.toc-level-1 { padding-left: 0.65rem; font-weight: 650; color: #f4f4f5; }
-.toc-level-2 { padding-left: 1.25rem; font-weight: 500; }
-.toc-level-3 { padding-left: 1.85rem; font-size: 0.78rem; font-weight: 500; }
-.toc-level-4 { padding-left: 2.35rem; font-size: 0.75rem; color: var(--text-faint); }
+.toc-level-1 { padding-left: 0.65rem; font-weight: 650; color: #ffffff; font-size: 0.84rem; }
+.toc-level-2 { padding-left: 1.25rem; font-weight: 500; color: #e4e4e7; font-size: 0.82rem; }
+.toc-level-3 { padding-left: 1.85rem; font-size: 0.80rem; font-weight: 500; color: #d4d4d8; }
+.toc-level-4 { padding-left: 2.35rem; font-size: 0.78rem; font-weight: 500; color: #a1a1aa; }
 
 .toc-code {
   font-family: var(--font-mono);
