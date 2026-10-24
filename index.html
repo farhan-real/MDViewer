@@ -106,33 +106,42 @@
     </div>
   </aside>
 
-  <!-- Markdown Input Drawer / Modal -->
-  <section id="editorDrawer" class="editor-drawer" aria-hidden="true">
-    <div class="editor-header">
-      <div class="editor-title-wrap">
-        <h3>Paste Markdown Source</h3>
-        <span class="editor-subtitle">Local rendering with automatic heading filename detection</span>
+  <!-- Paste Markdown Dialog Modal -->
+  <div id="pasteModal" class="modal-backdrop" aria-hidden="true">
+    <div class="dialog-card" role="dialog" aria-labelledby="dialogTitle">
+      <div class="dialog-header">
+        <div class="dialog-title-group">
+          <h3 id="dialogTitle">Paste Markdown</h3>
+          <span class="dialog-tag">Local</span>
+        </div>
+        <div class="dialog-header-actions">
+          <button id="pasteClipboardBtn" class="dialog-aux-btn" title="Paste from clipboard">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
+            <span>Paste Clipboard</span>
+          </button>
+          <button id="closeEditorBtn" class="dialog-close-btn" aria-label="Close dialog">Close</button>
+        </div>
       </div>
-      <div class="editor-actions">
-        <button id="pasteClipboardBtn" class="btn secondary-btn" title="Paste from clipboard">
-          <span>Paste Clipboard</span>
-        </button>
-        <button id="clearEditorBtn" class="btn ghost-btn">Clear</button>
-        <button id="closeEditorBtn" class="icon-btn" aria-label="Close Editor">&times;</button>
+
+      <div class="dialog-body">
+        <textarea id="markdownInput" placeholder="Paste Markdown here..." spellcheck="false"></textarea>
+      </div>
+
+      <div class="dialog-footer">
+        <div class="dialog-footer-left">
+          <button id="clearEditorBtn" class="dialog-ghost-btn">Clear</button>
+          <span class="dialog-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to render</span>
+        </div>
+        <div class="dialog-footer-right">
+          <button id="cancelEditorBtn" class="btn ghost-btn">Cancel</button>
+          <button id="applyEditorBtn" class="btn primary-btn">Render</button>
+        </div>
       </div>
     </div>
-    <div class="editor-body">
-      <textarea id="markdownInput" placeholder="Paste your raw Markdown here..." spellcheck="false"></textarea>
-    </div>
-    <div class="editor-footer">
-      <div class="editor-footer-left">
-        <span class="hint">Shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to render</span>
-      </div>
-      <div class="editor-footer-right">
-        <button id="applyEditorBtn" class="btn primary-btn">Render Document</button>
-      </div>
-    </div>
-  </section>
+  </div>
 
   <!-- Notification Toast -->
   <div id="toastNotification" class="toast-notification" aria-live="polite"></div>

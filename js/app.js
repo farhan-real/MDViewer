@@ -1,15 +1,16 @@
 /**
  * Master Application Coordinator
- * Manages document rendering, localStorage persistence, and editor interactions.
+ * Manages document rendering, modal dialogs, and localStorage persistence.
  */
 const App = (() => {
   const STORAGE_KEY = 'mdviewer_document';
 
   const viewer = document.getElementById('markdownViewer');
-  const editorDrawer = document.getElementById('editorDrawer');
+  const pasteModal = document.getElementById('pasteModal');
   const markdownInput = document.getElementById('markdownInput');
   const openEditorBtn = document.getElementById('openEditorBtn');
   const closeEditorBtn = document.getElementById('closeEditorBtn');
+  const cancelEditorBtn = document.getElementById('cancelEditorBtn');
   const applyEditorBtn = document.getElementById('applyEditorBtn');
   const clearEditorBtn = document.getElementById('clearEditorBtn');
   const pasteClipboardBtn = document.getElementById('pasteClipboardBtn');
@@ -107,7 +108,7 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     try {
       localStorage.setItem(STORAGE_KEY, content);
     } catch {
-      // Graceful fallback for quota limits or restricted sandbox modes
+      // Fallback for restricted storage environments
     }
   }
 
@@ -166,15 +167,15 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     updateDocumentStats(source, codeBlocks.length);
   }
 
-  function openEditor() {
-    editorDrawer.classList.add('open');
-    editorDrawer.setAttribute('aria-hidden', 'false');
+  function openDialog() {
+    pasteModal.classList.add('open');
+    pasteModal.setAttribute('aria-hidden', 'false');
     markdownInput.focus();
   }
 
-  function closeEditor() {
-    editorDrawer.classList.remove('open');
-    editorDrawer.setAttribute('aria-hidden', 'true');
+  function closeDialog() {
+    pasteModal.classList.remove('open');
+    pasteModal.setAttribute('aria-hidden', 'true');
   }
 
   function toggleSidebar() {
@@ -183,8 +184,16 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
   }
 
   // Event Listeners
-  openEditorBtn.addEventListener('click', openEditor);
-  closeEditorBtn.addEventListener('click', closeEditor);
+  openEditorBtn.addEventListener('click', openDialog);
+  closeEditorBtn.addEventListener('click', closeDialog);
+  cancelEditorBtn.addEventListener('click', closeDialog);
+
+  // Click on background backdrop dismisses modal
+  pasteModal.addEventListener('click', (e) => {
+    if (e.target === pasteModal) {
+      closeDialog();
+    }
+  });
 
   sampleBtn.addEventListener('click', () => {
     markdownInput.value = SAMPLE_MARKDOWN;
@@ -195,8 +204,8 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
   applyEditorBtn.addEventListener('click', () => {
     const content = markdownInput.value;
     renderMarkdownContent(content, true);
-    closeEditor();
-    showToast('Saved and rendered');
+    closeDialog();
+    showToast('Document rendered and saved');
   });
 
   clearEditorBtn.addEventListener('click', () => {
@@ -220,11 +229,11 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
   // Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      if (editorDrawer.classList.contains('open')) {
+      if (pasteModal.classList.contains('open')) {
         applyEditorBtn.click();
       }
-    } else if (e.key === 'Escape' && editorDrawer.classList.contains('open')) {
-      closeEditor();
+    } else if (e.key === 'Escape' && pasteModal.classList.contains('open')) {
+      closeDialog();
     }
   });
 
