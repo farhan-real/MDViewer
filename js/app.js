@@ -26,10 +26,10 @@ const App = (() => {
 
   let toastTimer;
 
-  const SAMPLE_MARKDOWN = `# MDViewer System Architecture
+  const SAMPLE_MARKDOWN = `# MDViewer Sample
 A professional offline AMOLED markdown viewer with contextual code extraction.
 
-## Core Infrastructure
+## Some code blocks
 
 ### \`gateway.config.json\`
 The block below has no filename in its code fence, but its filename is automatically detected and validated from the heading above:
