@@ -68,8 +68,9 @@ If matched, the code block adopts the filename as its primary label in both the 
 
 | Shortcut | Context | Action |
 | :--- | :--- | :--- |
-| `Alt` + `]` | Global Viewer | Jump to next code block and highlight |
-| `Alt` + `[` | Global Viewer | Jump to previous code block and highlight |
+| `P` | Global Viewer | Jump to previous code block and highlight |
+| `N` | Global Viewer | Jump to next code block and highlight |
+| `C` | Global Viewer | Copy active code block to clipboard |
 | `Ctrl` + `Enter` | Paste Dialog | Render document and save to storage |
 | `Escape` | Paste Dialog | Dismiss dialog without applying |
 

@@ -160,15 +160,22 @@ const CodeNavigator = (() => {
   nextBtn.addEventListener('click', next);
   copyBtn.addEventListener('click', copyActive);
 
+  // Keyboard navigation for P (prev), N (next), and C (copy)
   window.addEventListener('keydown', (e) => {
+    // Avoid triggering while typing inside input fields or dialog textareas
     if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-    if (e.altKey && e.key === ']') {
-      e.preventDefault();
-      next();
-    } else if (e.altKey && e.key === '[') {
+    const key = e.key.toLowerCase();
+    if (key === 'p') {
       e.preventDefault();
       prev();
+    } else if (key === 'n') {
+      e.preventDefault();
+      next();
+    } else if (key === 'c') {
+      e.preventDefault();
+      copyActive();
     }
   });
 
