@@ -154,6 +154,11 @@ const MarkdownParser = (() => {
             code: rawCode
           });
 
+          // Syntax Highlighting
+          const highlightedCode = (typeof SyntaxHighlighter !== 'undefined')
+            ? SyntaxHighlighter.highlight(rawCode, lang)
+            : escapeHtml(rawCode);
+
           html += `
           <div class="code-card" id="codeBlock${blockIndex}" data-block-index="${blockIndex}">
             <div class="code-header-bar">
@@ -170,7 +175,7 @@ const MarkdownParser = (() => {
               </button>
             </div>
             <div class="code-body-wrap">
-              <pre><code>${escapeHtml(rawCode)}</code></pre>
+              <pre><code class="language-${escapeHtml(lang)}">${highlightedCode}</code></pre>
             </div>
           </div>\n`;
         }

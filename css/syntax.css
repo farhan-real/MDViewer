@@ -1,0 +1,71 @@
+/* AMOLED Dark Syntax Highlighting */
+.code-body-wrap code {
+  color: #d4d4d8;
+  font-family: var(--font-mono);
+}
+
+/* Syntax Tokens */
+.token-keyword {
+  color: #818cf8;
+  font-weight: 600;
+}
+
+.token-builtin {
+  color: #a78bfa;
+}
+
+.token-string {
+  color: #34d399;
+}
+
+.token-comment {
+  color: #52525b;
+  font-style: italic;
+}
+
+.token-number {
+  color: #fbbf24;
+}
+
+.token-boolean {
+  color: #f472b6;
+  font-weight: 500;
+}
+
+.token-function {
+  color: #60a5fa;
+}
+
+.token-property {
+  color: #c7d2fe;
+}
+
+.token-operator {
+  color: #94a3b8;
+}
+
+.token-punctuation {
+  color: #71717a;
+}
+
+.token-tag {
+  color: #f87171;
+  font-weight: 500;
+}
+
+.token-attr {
+  color: #38bdf8;
+}
+
+.token-regex {
+  color: #f59e0b;
+}
+
+.token-variable {
+  color: #e4e4e7;
+}
+
+/* Subtly dim non-code tokens on hover for deep focus */
+.code-card:hover .token-comment {
+  color: #71717a;
+}
