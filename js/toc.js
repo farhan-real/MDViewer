@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Formats inline backticks as styled code blocks in the outline tree and prevents focus outlines.
+ * Formats inline backticks as styled code blocks in the outline tree and prevents focus outlines and scroll flicker.
  */
 const TocController = (() => {
   const container = document.getElementById('tocContainer');
@@ -9,6 +9,8 @@ const TocController = (() => {
 
   let headingElements = [];
   let currentFilter = '';
+  let isProgrammaticScroll = false;
+  let lockTimer = null;
 
   function escapeHtml(str) {
     return str
@@ -22,6 +24,19 @@ const TocController = (() => {
   function formatTocHtml(rawText) {
     const escaped = escapeHtml(rawText);
     return escaped.replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
+  }
+
+  function lockScrollspy(duration = 700) {
+    isProgrammaticScroll = true;
+    clearTimeout(lockTimer);
+    lockTimer = setTimeout(() => {
+      isProgrammaticScroll = false;
+    }, duration);
+  }
+
+  function unlockScrollspy() {
+    isProgrammaticScroll = false;
+    clearTimeout(lockTimer);
   }
 
   function render(headings) {
@@ -58,9 +73,12 @@ const TocController = (() => {
 
         const target = document.getElementById(h.id);
         if (target) {
+          // Lock scrollspy to prevent intermediate scroll flicker
+          lockScrollspy(700);
+          setActive(h.id);
+
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
           history.replaceState(null, '', `#${h.id}`);
-          setActive(h.id);
 
           // Instantly sync the Code Copy Menu to this heading's code block
           const nav = window.CodeNavigator || (typeof CodeNavigator !== 'undefined' ? CodeNavigator : null);
@@ -111,12 +129,20 @@ const TocController = (() => {
 
     let debounceTimer;
     scrollContainer.addEventListener('scroll', () => {
+      // Suppress scrollspy during programmatic jumps to eliminate flickering
+      if (isProgrammaticScroll) return;
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(syncScrollspy, 25);
+    }, { passive: true });
+
+    // Release lock as soon as the smooth scroll animation completes
+    scrollContainer.addEventListener('scrollend', () => {
+      unlockScrollspy();
     }, { passive: true });
   }
 
   function syncScrollspy() {
+    if (isProgrammaticScroll) return;
     const scrollContainer = document.getElementById('viewerWorkspace');
     if (!scrollContainer || !headingElements.length) return;
 
@@ -152,7 +178,7 @@ const TocController = (() => {
     applyFilter();
   });
 
-  return { render, setActive };
+  return { render, setActive, lockScrollspy, unlockScrollspy };
 })();
 
 // Explicitly register on global scope

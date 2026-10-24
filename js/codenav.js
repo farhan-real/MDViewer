@@ -77,10 +77,14 @@ const CodeNavigator = (() => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(syncScrollPosition, 25);
     }, { passive: true });
+
+    scrollContainer.addEventListener('scrollend', () => {
+      isUserScrolling = true;
+    }, { passive: true });
   }
 
   function syncScrollPosition() {
-    if (!blocks.length) return;
+    if (!blocks.length || !isUserScrolling) return;
     const scrollContainer = document.getElementById('viewerWorkspace');
     if (!scrollContainer) return;
 
@@ -116,12 +120,17 @@ const CodeNavigator = (() => {
     updateUI();
 
     const current = blocks[activeIndex];
-
-    // Instantly update the TOC active heading when jumping via shortcuts or buttons
     const headingId = getHeadingIdForBlock(current);
     const toc = window.TocController || (typeof TocController !== 'undefined' ? TocController : null);
-    if (toc && headingId) {
-      toc.setActive(headingId);
+
+    // Instantly lock both scrollspies and update TOC active heading
+    if (toc) {
+      if (typeof toc.lockScrollspy === 'function') {
+        toc.lockScrollspy(700);
+      }
+      if (headingId) {
+        toc.setActive(headingId);
+      }
     }
 
     const el = document.getElementById(current.id);
@@ -137,7 +146,7 @@ const CodeNavigator = (() => {
       scrollReleaseTimer = setTimeout(() => {
         isUserScrolling = true;
         el.classList.remove('target-highlight');
-      }, 650);
+      }, 700);
     }
   }
 
@@ -164,7 +173,12 @@ const CodeNavigator = (() => {
     }
 
     if (targetIndex !== -1 && targetIndex !== activeIndex) {
+      isUserScrolling = false;
       jumpTo(targetIndex, false);
+      clearTimeout(scrollReleaseTimer);
+      scrollReleaseTimer = setTimeout(() => {
+        isUserScrolling = true;
+      }, 700);
     }
   }
 
