@@ -82,3 +82,9 @@ If matched, the code block adopts the filename as its primary label in both the 
 2. Click **Paste / Edit** in the top navigation bar.
 3. Enter your raw Markdown content and click **Render**.
 4. Use the bottom-right **Code Copy Menu** or block headers to copy code snippets instantly.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
