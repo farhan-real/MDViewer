@@ -174,11 +174,13 @@
   font-size: 0.87em;
 }
 
-/* Bottom Clearance Spacer for Guaranteed Last-Item Visibility */
-.markdown-viewer::after {
-  content: "";
+/* Dedicated Physical End Clearance Spacer */
+.doc-end-spacer {
   display: block;
-  height: clamp(6rem, 15vh, 10rem);
+  width: 100%;
+  height: 40vh;
+  min-height: 280px;
+  pointer-events: none;
 }
 
 /* Distinct Code Card Container */

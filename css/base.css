@@ -216,21 +216,22 @@ body {
   background-color: var(--bg-core);
 }
 
+/* Block-level scroll container to prevent flex scroll-padding collapse */
 .viewer-workspace {
   flex: 1;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 2.25rem 2rem 14rem 2rem;
+  padding: 2.25rem 2rem 4rem 2rem;
   scroll-behavior: smooth;
-  display: flex;
-  justify-content: center;
+  display: block;
   background-color: var(--bg-core);
 }
 
 .markdown-viewer {
   width: 100%;
   max-width: 840px;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {
@@ -238,6 +239,6 @@ body {
     display: none;
   }
   .viewer-workspace {
-    padding: 1.25rem 1rem 12rem 1rem;
+    padding: 1.25rem 1rem 3rem 1rem;
   }
 }

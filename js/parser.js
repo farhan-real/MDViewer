@@ -1,6 +1,6 @@
 /**
  * Standalone Offline Markdown Parser
- * Extracts code fences and identifies filenames via regex validation from fences or preceding headings.
+ * Extracts code fences, validates filenames via regex, and injects bottom document clearance.
  */
 const MarkdownParser = (() => {
   // Regex to strictly validate filenames (e.g. app.js, config.yaml, src/main.rs, Dockerfile)
@@ -266,6 +266,9 @@ const MarkdownParser = (() => {
 
     flushList();
     flushTable();
+
+    // Injected physical end-of-document spacer to ensure trailing lines are never obscured by floating UI
+    html += '<div class="doc-end-spacer" aria-hidden="true"></div>\n';
 
     return { html, headings, codeBlocks };
   }
