@@ -163,10 +163,8 @@ const CodeNavigator = (() => {
   function syncToHeadingId(headingId) {
     if (!blocks.length || !headingId) return;
 
-    // 1. Direct match by parent heading ID
     let targetIndex = blocks.findIndex(b => b.parentHeadingId === headingId);
 
-    // 2. Fallback: match by position relative to heading element
     if (targetIndex === -1) {
       const hEl = document.getElementById(headingId);
       if (hEl) {
@@ -230,33 +228,12 @@ const CodeNavigator = (() => {
   function notifyCopied() {
     copyText.textContent = 'Copied!';
     window.App?.showToast(`Copied #${activeIndex + 1} (${blocks[activeIndex].name})`);
-
-    setTimeout(() => {
-      copyText.textContent = 'Copy';
-    }, 1800);
+    setTimeout(() => { copyText.textContent = 'Copy'; }, 1800);
   }
 
   prevBtn.addEventListener('click', prev);
   nextBtn.addEventListener('click', next);
   copyBtn.addEventListener('click', copyActive);
-
-  // Keyboard navigation for P (prev), N (next), and C (copy)
-  window.addEventListener('keydown', (e) => {
-    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-    const key = e.key.toLowerCase();
-    if (key === 'p') {
-      e.preventDefault();
-      prev();
-    } else if (key === 'n') {
-      e.preventDefault();
-      next();
-    } else if (key === 'c') {
-      e.preventDefault();
-      copyActive();
-    }
-  });
 
   return { init, jumpTo, next, prev, copyActive, syncToHeadingId };
 })();

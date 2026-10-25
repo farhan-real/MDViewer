@@ -1,6 +1,6 @@
 /**
  * Master Application Coordinator
- * Manages document rendering, modal dialogs, sidebar states, and localStorage persistence.
+ * Manages document rendering, modal dialogs, and external shortcut triggers.
  */
 const App = (() => {
   const STORAGE_KEY = 'mdviewer_document';
@@ -26,10 +26,10 @@ const App = (() => {
 
   let toastTimer;
 
-  const SAMPLE_MARKDOWN = `# MDViewer Sample
+  const SAMPLE_MARKDOWN = `# MDViewer System Architecture
 A professional offline AMOLED markdown viewer with contextual code extraction.
 
-## Some code blocks
+## Core Infrastructure
 
 ### \`gateway.config.json\`
 The block below has no filename in its code fence, but its filename is automatically detected and validated from the heading above:
@@ -107,9 +107,7 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
   function saveToStorage(content) {
     try {
       localStorage.setItem(STORAGE_KEY, content);
-    } catch {
-      // Fallback for restricted storage environments
-    }
+    } catch {}
   }
 
   function loadFromStorage() {
@@ -192,11 +190,8 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
   closeEditorBtn.addEventListener('click', closeDialog);
   cancelEditorBtn.addEventListener('click', closeDialog);
 
-  // Click on background backdrop dismisses modal
   pasteModal.addEventListener('click', (e) => {
-    if (e.target === pasteModal) {
-      closeDialog();
-    }
+    if (e.target === pasteModal) closeDialog();
   });
 
   sampleBtn.addEventListener('click', () => {
@@ -233,7 +228,6 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     sidebarBackdrop.classList.remove('active');
   });
 
-  // Reset mobile states on viewport resize
   window.addEventListener('resize', () => {
     if (window.innerWidth > 768) {
       tocSidebar.classList.remove('open');
@@ -241,22 +235,28 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     }
   });
 
-  // Keyboard Shortcuts
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      if (pasteModal.classList.contains('open')) {
-        applyEditorBtn.click();
-      }
-    } else if (e.key === 'Escape' && pasteModal.classList.contains('open')) {
-      closeDialog();
+  // External trigger hooks for ShortcutsManager
+  function triggerRender() {
+    if (pasteModal.classList.contains('open')) {
+      applyEditorBtn.click();
+      return true;
     }
-  });
+    return false;
+  }
 
-  // Initial Boot: Check localStorage first, fallback to sample document
+  function triggerClose() {
+    if (pasteModal.classList.contains('open')) {
+      closeDialog();
+      return true;
+    }
+    return false;
+  }
+
+  // Initial Boot
   const storedDocument = loadFromStorage();
   const initialContent = storedDocument !== null ? storedDocument : SAMPLE_MARKDOWN;
   markdownInput.value = initialContent;
   renderMarkdownContent(initialContent, false);
 
-  return { showToast };
+  return { showToast, triggerRender, triggerClose };
 })();

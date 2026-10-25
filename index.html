@@ -6,9 +6,9 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <title>MDViewer - Professional Offline Markdown Viewer</title>
-  <link rel="stylesheet" href="css/base.css?v=2.1">
-  <link rel="stylesheet" href="css/components.css?v=2.1">
-  <link rel="stylesheet" href="css/syntax.css?v=2.1">
+  <link rel="stylesheet" href="css/base.css?v=2.2">
+  <link rel="stylesheet" href="css/components.css?v=2.2">
+  <link rel="stylesheet" href="css/syntax.css?v=2.2">
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -38,6 +38,20 @@
 
     <div class="header-right">
       <button id="sampleBtn" class="btn ghost-btn" title="Load sample document">Load Sample</button>
+      <button id="shortcutsBtn" class="icon-btn" aria-label="Configure Keyboard Shortcuts" title="Configure Shortcuts">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <line x1="6" y1="8" x2="6.01" y2="8"></line>
+          <line x1="10" y1="8" x2="10.01" y2="8"></line>
+          <line x1="14" y1="8" x2="14.01" y2="8"></line>
+          <line x1="18" y1="8" x2="18.01" y2="8"></line>
+          <line x1="6" y1="12" x2="6.01" y2="12"></line>
+          <line x1="10" y1="12" x2="10.01" y2="12"></line>
+          <line x1="14" y1="12" x2="14.01" y2="12"></line>
+          <line x1="18" y1="12" x2="18.01" y2="12"></line>
+          <line x1="7" y1="16" x2="17" y2="16"></line>
+        </svg>
+      </button>
       <button id="openEditorBtn" class="btn primary-btn" title="Paste or edit markdown">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -89,17 +103,17 @@
     </div>
 
     <div class="code-nav-section nav-actions-area">
-      <button id="codePrevBtn" class="icon-nav-btn" aria-label="Previous Code Block" title="Previous Block (P)">
+      <button id="codePrevBtn" class="icon-nav-btn" aria-label="Previous Code Block" title="Previous Block">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
-      <button id="codeNextBtn" class="icon-nav-btn" aria-label="Next Code Block" title="Next Block (N)">
+      <button id="codeNextBtn" class="icon-nav-btn" aria-label="Next Code Block" title="Next Block">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
           <polyline points="9 18 15 12 9 6"></polyline>
         </svg>
       </button>
-      <button id="codeCopyBtn" class="copy-action-btn" aria-label="Copy Active Code" title="Copy Active Block (C)">
+      <button id="codeCopyBtn" class="copy-action-btn" aria-label="Copy Active Code" title="Copy Active Block">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -108,6 +122,61 @@
       </button>
     </div>
   </aside>
+
+  <!-- Shortcuts Configuration Dialog -->
+  <div id="shortcutsModal" class="modal-backdrop" aria-hidden="true">
+    <div class="dialog-card shortcut-dialog-card" role="dialog" aria-labelledby="shortcutsTitle">
+      <div class="dialog-header">
+        <div class="dialog-title-group">
+          <h3 id="shortcutsTitle">Keyboard Shortcuts</h3>
+          <span class="dialog-tag">Multi-Key Supported</span>
+        </div>
+        <button id="closeShortcutsBtn" class="dialog-close-btn" aria-label="Close dialog">Close</button>
+      </div>
+      <div class="dialog-body shortcuts-dialog-body">
+        <p class="shortcuts-instructions">Click a key button and press any single key or combination (e.g. Ctrl+Enter).</p>
+        <div class="shortcut-row">
+          <div class="shortcut-info">
+            <span class="shortcut-label">Previous Code Block</span>
+            <span class="shortcut-desc">Jump to earlier snippet</span>
+          </div>
+          <button class="shortcut-key-btn" data-action="prev" id="shortcutPrevBtn">P</button>
+        </div>
+        <div class="shortcut-row">
+          <div class="shortcut-info">
+            <span class="shortcut-label">Next Code Block</span>
+            <span class="shortcut-desc">Jump to subsequent snippet</span>
+          </div>
+          <button class="shortcut-key-btn" data-action="next" id="shortcutNextBtn">N</button>
+        </div>
+        <div class="shortcut-row">
+          <div class="shortcut-info">
+            <span class="shortcut-label">Copy Active Block</span>
+            <span class="shortcut-desc">Copy highlighted code</span>
+          </div>
+          <button class="shortcut-key-btn" data-action="copy" id="shortcutCopyBtn">C</button>
+        </div>
+        <div class="shortcut-row">
+          <div class="shortcut-info">
+            <span class="shortcut-label">Render Document</span>
+            <span class="shortcut-desc">Apply markdown in paste dialog</span>
+          </div>
+          <button class="shortcut-key-btn" data-action="render" id="shortcutRenderBtn">Ctrl+Enter</button>
+        </div>
+        <div class="shortcut-row">
+          <div class="shortcut-info">
+            <span class="shortcut-label">Close Dialog</span>
+            <span class="shortcut-desc">Dismiss active modal dialog</span>
+          </div>
+          <button class="shortcut-key-btn" data-action="close" id="shortcutCloseBtn">Esc</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button id="resetShortcutsBtn" class="dialog-ghost-btn">Reset Defaults</button>
+        <button id="saveShortcutsBtn" class="btn primary-btn">Done</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Paste Markdown Dialog Modal -->
   <div id="pasteModal" class="modal-backdrop" aria-hidden="true">
@@ -136,7 +205,7 @@
       <div class="dialog-footer">
         <div class="dialog-footer-left">
           <button id="clearEditorBtn" class="dialog-ghost-btn">Clear</button>
-          <span class="dialog-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to render</span>
+          <span class="dialog-hint" id="renderShortcutHint">Shortcut: <kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
         </div>
         <div class="dialog-footer-right">
           <button id="cancelEditorBtn" class="btn ghost-btn">Cancel</button>
@@ -150,10 +219,11 @@
   <div id="toastNotification" class="toast-notification" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="js/highlighter.js?v=2.1"></script>
-  <script src="js/parser.js?v=2.1"></script>
-  <script src="js/toc.js?v=2.1"></script>
-  <script src="js/codenav.js?v=2.1"></script>
-  <script src="js/app.js?v=2.1"></script>
+  <script src="js/highlighter.js?v=2.2"></script>
+  <script src="js/parser.js?v=2.2"></script>
+  <script src="js/toc.js?v=2.2"></script>
+  <script src="js/codenav.js?v=2.2"></script>
+  <script src="js/shortcuts.js?v=2.2"></script>
+  <script src="js/app.js?v=2.2"></script>
 </body>
 </html>
