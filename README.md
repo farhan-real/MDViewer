@@ -8,7 +8,7 @@ MDViewer is a standalone, offline, hyper-modular Markdown viewer engineered with
 
 Launch the application directly in your browser:
 
-**[https://farhan-real.github.io/MDViewer/](https://farhan-real.github.io/MDViewer/)**
+**[Github Pages](https://farhan-real.github.io/MDViewer) or [Cloudflare Pages](https://farhan-mdviewer.pages.dev/) (Both are identical)**
 
 Alternatively, run locally without any installation or server required:
 1. Download or clone this repository.
