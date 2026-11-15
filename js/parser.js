@@ -1,12 +1,9 @@
 /**
  * Standalone Offline Markdown Parser
- * Extracts code fences, validates filenames via regex, and injects bottom document clearance.
+ * Extracts code fences, validates filenames via regex, supports LaTeX blocks, and injects bottom clearance.
  */
 const MarkdownParser = (() => {
-  // Regex to strictly validate filenames (e.g. app.js, config.yaml, src/main.rs, Dockerfile)
   const FILENAME_VALIDATOR = /^([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]{1,8}|Dockerfile|Makefile|Vagrantfile|docker-compose\.ya?ml)$/i;
-
-  // Regex to extract candidate filename patterns from heading text
   const HEADING_FILENAME_EXTRACTOR = /(?:(?:file(?:name)?|path):\s*)?`?([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]{1,8}|Dockerfile|Makefile|Vagrantfile)`?/i;
 
   function escapeHtml(str) {
@@ -32,14 +29,15 @@ const MarkdownParser = (() => {
     const match = headingText.match(HEADING_FILENAME_EXTRACTOR);
     if (match && match[1]) {
       const candidate = match[1].trim();
-      if (FILENAME_VALIDATOR.test(candidate)) {
-        return candidate;
-      }
+      if (FILENAME_VALIDATOR.test(candidate)) return candidate;
     }
     return null;
   }
 
   function parseInline(text) {
+    if (typeof LatexEngine !== 'undefined') {
+      return LatexEngine.formatInline(text, 'inline-code');
+    }
     let output = escapeHtml(text);
     output = output.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
     output = output.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -48,6 +46,13 @@ const MarkdownParser = (() => {
     output = output.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
     output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     return output;
+  }
+
+  function splitCells(rowLine) {
+    if (typeof LatexEngine !== 'undefined') {
+      return LatexEngine.splitTableRow(rowLine).filter(Boolean);
+    }
+    return rowLine.split('|').map(s => s.trim()).filter(Boolean);
   }
 
   function parse(markdown) {
@@ -79,12 +84,12 @@ const MarkdownParser = (() => {
       if (!inTable) return;
       if (tableBuffer.length >= 2) {
         html += '<table><thead>\n<tr>';
-        const headers = tableBuffer[0].split('|').map(s => s.trim()).filter(Boolean);
+        const headers = splitCells(tableBuffer[0]);
         headers.forEach(h => { html += `<th>${parseInline(h)}</th>`; });
         html += '</tr>\n</thead><tbody>\n';
 
         for (let i = 2; i < tableBuffer.length; i++) {
-          const cells = tableBuffer[i].split('|').map(s => s.trim()).filter(Boolean);
+          const cells = splitCells(tableBuffer[i]);
           if (cells.length) {
             html += '<tr>';
             cells.forEach(c => { html += `<td>${parseInline(c)}</td>`; });
@@ -100,7 +105,6 @@ const MarkdownParser = (() => {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // Code Fence Toggle
       if (line.trim().startsWith('```')) {
         if (!inCodeBlock) {
           flushList();
@@ -111,12 +115,9 @@ const MarkdownParser = (() => {
         } else {
           inCodeBlock = false;
           const rawCode = codeBuffer.join('\n');
-          const blockIndex = codeBlocks.length;
-
           let lang = 'code';
           let filename = '';
 
-          // Parse metadata if present in the fence
           if (codeMeta) {
             if (codeMeta.includes(':')) {
               const parts = codeMeta.split(':');
@@ -131,20 +132,19 @@ const MarkdownParser = (() => {
             }
           }
 
-          // Validate or discover filename via regex from the heading directly above
-          if (filename && !FILENAME_VALIDATOR.test(filename)) {
-            filename = '';
+          if (lang.toLowerCase() === 'math' && typeof LatexEngine !== 'undefined') {
+            html += LatexEngine.renderDisplayBlock(rawCode);
+            continue;
           }
 
+          const blockIndex = codeBlocks.length;
+          if (filename && !FILENAME_VALIDATOR.test(filename)) filename = '';
           if (!filename && lastHeading) {
             const detectedName = extractFilenameFromHeading(lastHeading);
-            if (detectedName) {
-              filename = detectedName;
-            }
+            if (detectedName) filename = detectedName;
           }
 
           const displayName = filename || (lastHeading ? lastHeading : `${lang.toUpperCase()} snippet`);
-
           codeBlocks.push({
             id: `codeBlock${blockIndex}`,
             index: blockIndex,
@@ -156,7 +156,6 @@ const MarkdownParser = (() => {
             code: rawCode
           });
 
-          // Syntax Highlighting
           const highlightedCode = (typeof SyntaxHighlighter !== 'undefined')
             ? SyntaxHighlighter.highlight(rawCode, lang)
             : escapeHtml(rawCode);
@@ -189,7 +188,17 @@ const MarkdownParser = (() => {
         continue;
       }
 
-      // Tables
+      if (typeof LatexEngine !== 'undefined') {
+        const displayMatch = LatexEngine.consumeDisplayBlock(lines, i);
+        if (displayMatch) {
+          flushList();
+          flushTable();
+          html += displayMatch.html;
+          i = displayMatch.endIndex;
+          continue;
+        }
+      }
+
       if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
         flushList();
         inTable = true;
@@ -199,7 +208,6 @@ const MarkdownParser = (() => {
         flushTable();
       }
 
-      // Headings
       const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
       if (headingMatch) {
         flushList();
@@ -213,14 +221,12 @@ const MarkdownParser = (() => {
         continue;
       }
 
-      // Horizontal Rule
       if (/^(\*\*\*|---|___)$/.test(line.trim())) {
         flushList();
         html += '<hr>\n';
         continue;
       }
 
-      // Blockquotes
       if (line.trim().startsWith('>')) {
         flushList();
         const quoteContent = line.replace(/^>\s?/, '');
@@ -228,7 +234,6 @@ const MarkdownParser = (() => {
         continue;
       }
 
-      // Unordered Lists
       const ulMatch = line.match(/^(\s*)[-*+]\s+(.*)$/);
       if (ulMatch) {
         if (!inList || listType !== 'ul') {
@@ -241,7 +246,6 @@ const MarkdownParser = (() => {
         continue;
       }
 
-      // Ordered Lists
       const olMatch = line.match(/^(\s*)\d+\.\s+(.*)$/);
       if (olMatch) {
         if (!inList || listType !== 'ol') {
@@ -259,15 +263,12 @@ const MarkdownParser = (() => {
         continue;
       }
 
-      // Paragraphs
       flushList();
       html += `<p>${parseInline(line)}</p>\n`;
     }
 
     flushList();
     flushTable();
-
-    // Injected physical end-of-document spacer to ensure trailing lines are never obscured by floating UI
     html += '<div class="doc-end-spacer" aria-hidden="true"></div>\n';
 
     return { html, headings, codeBlocks };

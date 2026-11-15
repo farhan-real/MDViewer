@@ -6,9 +6,9 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <title>MDViewer - Professional Offline Markdown Viewer</title>
-  <link rel="stylesheet" href="css/base.css?v=2.2">
-  <link rel="stylesheet" href="css/components.css?v=2.2">
-  <link rel="stylesheet" href="css/syntax.css?v=2.2">
+  <link rel="stylesheet" href="css/base.css?v=2.3">
+  <link rel="stylesheet" href="css/components.css?v=2.3">
+  <link rel="stylesheet" href="css/syntax.css?v=2.3">
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -74,7 +74,7 @@
           <input type="search" id="tocFilterInput" placeholder="Filter headings..." autocomplete="off">
         </div>
       </div>
-      <nav id="tocContainer" class="toc-container" aria-label="Table of Contents">
+      <nav id="tocContainer" class="toc-container tex2jax_ignore" aria-label="Table of Contents">
         <!-- Rendered dynamically -->
       </nav>
     </aside>
@@ -84,7 +84,7 @@
 
     <!-- Main Markdown Viewer Area -->
     <main class="viewer-workspace" id="viewerWorkspace">
-      <article id="markdownViewer" class="markdown-viewer">
+      <article id="markdownViewer" class="markdown-viewer tex2jax_ignore">
         <!-- Markdown rendered content injected here -->
       </article>
     </main>
@@ -219,11 +219,13 @@
   <div id="toastNotification" class="toast-notification" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="js/highlighter.js?v=2.2"></script>
-  <script src="js/parser.js?v=2.2"></script>
-  <script src="js/toc.js?v=2.2"></script>
-  <script src="js/codenav.js?v=2.2"></script>
-  <script src="js/shortcuts.js?v=2.2"></script>
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/latex.js?v=2.3"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js"></script>
+  <script src="js/highlighter.js?v=2.3"></script>
+  <script src="js/parser.js?v=2.3"></script>
+  <script src="js/toc.js?v=2.3"></script>
+  <script src="js/codenav.js?v=2.3"></script>
+  <script src="js/shortcuts.js?v=2.3"></script>
+  <script src="js/app.js?v=2.3"></script>
 </body>
 </html>

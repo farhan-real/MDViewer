@@ -1,6 +1,6 @@
 /**
  * Master Application Coordinator
- * Manages document rendering, modal dialogs, and external shortcut triggers.
+ * Manages document rendering, LaTeX typesetting, modal dialogs, and external shortcut triggers.
  */
 const App = (() => {
   const STORAGE_KEY = 'mdviewer_document';
@@ -17,6 +17,7 @@ const App = (() => {
   const sampleBtn = document.getElementById('sampleBtn');
   const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
   const tocSidebar = document.getElementById('tocSidebar');
+  const tocContainer = document.getElementById('tocContainer');
   const sidebarBackdrop = document.getElementById('sidebarBackdrop');
   const toast = document.getElementById('toastNotification');
 
@@ -27,7 +28,7 @@ const App = (() => {
   let toastTimer;
 
   const SAMPLE_MARKDOWN = `# MDViewer System Architecture
-A professional offline AMOLED markdown viewer with contextual code extraction.
+A professional AMOLED markdown viewer with contextual code extraction and full $\\LaTeX$ support.
 
 ## Core Infrastructure
 
@@ -82,13 +83,27 @@ services:
           memory: 4096M
 \`\`\`
 
+### Mathematical & $\\LaTeX$ Rendering ($\\hat{H}\\ket{\\psi} = E\\ket{\\psi}$)
+Inline formulas like $E = mc^2$ and \\(\\nabla \\cdot \\mathbf{E} = \\frac{\\rho}{\\varepsilon_0}\\) render alongside multi-line equations, physics notation, chemistry (\\(\\ce{2H2 + O2 -> 2H2O}\\)), and matrices:
+
+$$\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}$$
+
+\\begin{align}
+\\mathcal{L}(\\theta) &= -\\frac{1}{N} \\sum_{i=1}^{N} \\Big[ y_i \\log(\\hat{y}_i) + (1 - y_i)\\log(1 - \\hat{y}_i) \\Big] \\\\
+\\mathbf{A} &= \\begin{bmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{bmatrix}, \\quad \\mel{\\psi}{\\hat{H}}{\\phi} = \\cancel{0} + \\hbar\\omega
+\\end{align}
+
+\`\`\`math
+P(A \\mid B) = \\frac{P(B \\mid A) \\, P(A)}{P(B)}
+\`\`\`
+
 ### Comprehensive System Health Metrics
 
-| Service Component | Operational Status | Latency Window | SLA Ratio |
+| Service Component | Operational Status | Latency Window | Formulation |
 | :--- | :--- | :--- | :--- |
-| Core Dispatcher | Active | < 1.2 ms | 99.99% |
-| Task Persistence | Active | < 4.5 ms | 99.95% |
-| Edge Ingress | Active | < 0.8 ms | 100.0% |
+| Core Dispatcher | Active | $< 1.2\\text{ ms}$ | $\\mathcal{O}(\\log n)$ |
+| Task Persistence | Active | $< 4.5\\text{ ms}$ | $\\|x\\|_2 \\le \\epsilon$ |
+| Edge Ingress | Active | $< 0.8\\text{ ms}$ | $\\lambda \\approx 1.25\\times 10^4$ |
 
 ### \`scripts/backup.sh\`
 Routine cold snapshotting utility:
@@ -144,7 +159,6 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
       saveToStorage(source);
     }
 
-    // Attach copy handlers to individual block header buttons
     viewer.querySelectorAll('.code-block-copy').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const targetIndex = parseInt(btn.dataset.blockTarget, 10);
@@ -159,10 +173,13 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
       });
     });
 
-    // Refresh TOC and Navigator
     TocController.render(headings);
     CodeNavigator.init(codeBlocks);
     updateDocumentStats(source, codeBlocks.length);
+
+    if (typeof LatexEngine !== 'undefined') {
+      LatexEngine.typeset([viewer, tocContainer]);
+    }
   }
 
   function openDialog() {
@@ -185,7 +202,6 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     }
   }
 
-  // Event Listeners
   openEditorBtn.addEventListener('click', openDialog);
   closeEditorBtn.addEventListener('click', closeDialog);
   cancelEditorBtn.addEventListener('click', closeDialog);
@@ -235,7 +251,6 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     }
   });
 
-  // External trigger hooks for ShortcutsManager
   function triggerRender() {
     if (pasteModal.classList.contains('open')) {
       applyEditorBtn.click();
@@ -252,7 +267,6 @@ Use the bottom-right **Code Copy Menu** or the copy button on any block header t
     return false;
   }
 
-  // Initial Boot
   const storedDocument = loadFromStorage();
   const initialContent = storedDocument !== null ? storedDocument : SAMPLE_MARKDOWN;
   markdownInput.value = initialContent;

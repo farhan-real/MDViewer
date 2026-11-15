@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Formats inline backticks as styled code blocks in the outline tree and prevents focus outlines and scroll flicker.
+ * Formats inline backticks and inline LaTeX in the outline tree and prevents focus outlines and scroll flicker.
  */
 const TocController = (() => {
   const container = document.getElementById('tocContainer');
@@ -22,6 +22,9 @@ const TocController = (() => {
   }
 
   function formatTocHtml(rawText) {
+    if (typeof LatexEngine !== 'undefined') {
+      return LatexEngine.formatInline(rawText, 'toc-code');
+    }
     const escaped = escapeHtml(rawText);
     return escaped.replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
   }
@@ -67,7 +70,6 @@ const TocController = (() => {
       link.innerHTML = formatTocHtml(h.text);
       link.setAttribute('tabindex', '-1');
 
-      // Prevent browser from acquiring persistent focus on mouse interactions
       link.addEventListener('mousedown', (e) => {
         e.preventDefault();
       });
@@ -89,13 +91,11 @@ const TocController = (() => {
           scrollToElementTop(scrollContainer, target);
           history.replaceState(null, '', `#${h.id}`);
 
-          // Instantly sync the Code Copy Menu to this heading's code block
           const nav = window.CodeNavigator || (typeof CodeNavigator !== 'undefined' ? CodeNavigator : null);
           if (nav && typeof nav.syncToHeadingId === 'function') {
             nav.syncToHeadingId(h.id);
           }
 
-          // Auto-close drawer on mobile when an item is selected
           if (window.innerWidth <= 768) {
             document.getElementById('tocSidebar')?.classList.remove('open');
             document.getElementById('sidebarBackdrop')?.classList.remove('active');
@@ -123,7 +123,6 @@ const TocController = (() => {
       }
     });
 
-    // Clear stale focus from any active element inside TOC
     if (document.activeElement && document.activeElement.classList.contains('toc-item')) {
       document.activeElement.blur();
     }
@@ -188,5 +187,4 @@ const TocController = (() => {
   return { render, setActive, lockScrollspy, unlockScrollspy };
 })();
 
-// Explicitly register on global scope
 window.TocController = TocController;
