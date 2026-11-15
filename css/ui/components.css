@@ -134,6 +134,7 @@
   overflow-y: hidden;
   max-width: 100%;
   text-align: center;
+  contain: layout style;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -154,6 +155,7 @@
   border: 1.5px solid var(--border-mid);
   border-radius: var(--radius-md);
   overflow: hidden;
+  contain: layout style;
   transition: border-color var(--transition-fast);
 }
 
@@ -215,7 +217,7 @@
   font-size: 0.72rem;
   cursor: pointer;
   flex-shrink: 0;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .code-block-copy:hover {

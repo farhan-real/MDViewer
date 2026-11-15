@@ -3,7 +3,6 @@
   position: fixed;
   inset: 0;
   background: var(--backdrop-modal);
-  backdrop-filter: blur(4px);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -11,7 +10,9 @@
   padding: 1.25rem;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--transition-smooth);
+  contain: layout style;
+  will-change: opacity;
+  transition: opacity 160ms ease;
 }
 
 .modal-backdrop.open {
@@ -28,13 +29,14 @@
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-modal);
-  transform: scale(0.96) translateY(6px);
+  transform: translate3d(0, 8px, 0) scale(0.97);
+  will-change: transform;
   transition: transform var(--transition-smooth);
   overflow: hidden;
 }
 
 .modal-backdrop.open .dialog-card {
-  transform: scale(1) translateY(0);
+  transform: translate3d(0, 0, 0) scale(1);
 }
 
 .dialog-header {
@@ -84,7 +86,7 @@
   align-items: center;
   gap: 0.35rem;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .dialog-aux-btn:hover {
@@ -233,7 +235,7 @@
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .shortcut-key-btn:hover {

@@ -11,6 +11,8 @@
   border-radius: var(--radius-pill);
   padding: 0.32rem 0.65rem;
   box-shadow: var(--shadow-floating);
+  transform: translate3d(0, 0, 0);
+  contain: layout style;
   z-index: 40;
   max-width: calc(100vw - 1.5rem);
   box-sizing: border-box;
@@ -53,11 +55,6 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  transition: max-width var(--transition-smooth);
-}
-
-.nav-info-area:hover {
-  max-width: clamp(240px, 65vw, 680px);
 }
 
 .nav-symbol {
@@ -92,7 +89,7 @@
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .icon-nav-btn:hover:not(:disabled) {
@@ -130,7 +127,7 @@
   position: fixed;
   top: 1.25rem;
   left: 50%;
-  transform: translateX(-50%) translateY(-20px);
+  transform: translate3d(-50%, -18px, 0);
   background: var(--bg-floating);
   color: var(--text-strong);
   border: 1.5px solid var(--border-mid);
@@ -141,13 +138,14 @@
   font-weight: 500;
   opacity: 0;
   pointer-events: none;
-  transition: all var(--transition-smooth);
+  will-change: transform, opacity;
+  transition: opacity 150ms ease, transform var(--transition-smooth);
   z-index: 60;
 }
 
 .toast-notification.show {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translate3d(-50%, 0, 0);
 }
 
 /* Mobile Layout */

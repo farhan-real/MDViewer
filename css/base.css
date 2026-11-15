@@ -65,6 +65,7 @@ body.light-theme .theme-icon-sun {
   align-items: center;
   justify-content: space-between;
   padding: 0 1.25rem;
+  contain: layout style;
   z-index: 30;
   position: relative;
 }
@@ -128,7 +129,7 @@ body.light-theme .theme-icon-sun {
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 500;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .primary-btn {
@@ -173,7 +174,7 @@ body.light-theme .theme-icon-sun {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .icon-btn:hover {
@@ -193,14 +194,15 @@ body.light-theme .theme-icon-sun {
   background-color: var(--bg-core);
 }
 
-/* Block-level scroll container to prevent flex scroll-padding collapse */
+/* High-refresh compositor-friendly scroll container */
 .viewer-workspace {
   flex: 1;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 2.25rem 2rem 4rem 2rem;
-  scroll-behavior: smooth;
   display: block;
   background-color: var(--bg-core);
 }

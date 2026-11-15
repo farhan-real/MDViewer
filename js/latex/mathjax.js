@@ -50,6 +50,9 @@ const LatexRuntime = (() => {
         }
         return window.MathJax.typesetPromise(elements);
       })
+      .then(() => {
+        document.dispatchEvent(new CustomEvent('mdviewer:typeset'));
+      })
       .catch((err) => {
         console.warn('MathJax typeset warning:', err);
       });
