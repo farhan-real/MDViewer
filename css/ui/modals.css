@@ -1,4 +1,4 @@
-/* Modals & Dialogs */
+/* Modals & Paste Dialog */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -175,77 +175,4 @@
   padding: 0.1rem 0.3rem;
   font-size: 0.7rem;
   color: var(--text-muted);
-}
-
-/* Shortcuts Configurator */
-.shortcut-dialog-card {
-  max-width: 480px;
-}
-
-.shortcuts-dialog-body {
-  padding: 1.1rem 1.25rem;
-  background: var(--bg-modal-body);
-}
-
-.shortcuts-instructions {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-bottom: 0.75rem;
-}
-
-.shortcut-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--border-dim);
-}
-
-.shortcut-row:last-child {
-  border-bottom: none;
-}
-
-.shortcut-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.shortcut-label {
-  font-size: 0.84rem;
-  font-weight: 500;
-  color: var(--text-strong);
-}
-
-.shortcut-desc {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.shortcut-key-btn {
-  min-width: 52px;
-  width: auto;
-  height: 30px;
-  padding: 0 0.65rem;
-  background: var(--bg-elevated);
-  border: 1.5px solid var(--border-mid);
-  color: var(--accent-primary);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-}
-
-.shortcut-key-btn:hover {
-  border-color: var(--accent-primary);
-  background: var(--bg-card-hover);
-}
-
-.shortcut-key-btn.recording {
-  border-color: var(--accent-primary);
-  color: var(--text-strong);
-  background: var(--accent-surface);
-  outline: 1.5px solid var(--accent-primary);
 }

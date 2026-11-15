@@ -2,6 +2,8 @@
 :root {
   color-scheme: dark;
 
+  --doc-font-size: 15px;
+
   --bg-core: #000000;
   --bg-sidebar: #050505;
   --bg-card: #0a0a0c;

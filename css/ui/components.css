@@ -1,4 +1,9 @@
 /* Markdown Elements */
+.markdown-viewer {
+  font-size: var(--doc-font-size);
+  line-height: 1.6;
+}
+
 .markdown-viewer h1,
 .markdown-viewer h2,
 .markdown-viewer h3,
@@ -12,19 +17,23 @@
 }
 
 .markdown-viewer h1 {
-  font-size: 1.85rem;
+  font-size: 1.9em;
   border-bottom: 1.5px solid var(--border-dim);
   padding-bottom: 0.45rem;
 }
 
 .markdown-viewer h2 {
-  font-size: 1.42rem;
+  font-size: 1.45em;
   border-bottom: 1.5px solid var(--border-dim);
   padding-bottom: 0.35rem;
 }
 
 .markdown-viewer h3 {
-  font-size: 1.18rem;
+  font-size: 1.2em;
+}
+
+.markdown-viewer h4 {
+  font-size: 1.05em;
 }
 
 .markdown-viewer p {
@@ -76,6 +85,7 @@
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1.5px solid var(--border-dim);
+  font-size: 0.94em;
 }
 
 .markdown-viewer th,
@@ -230,7 +240,7 @@
   padding: 0.95rem 1.15rem;
   overflow-x: auto;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.88em;
   line-height: 1.58;
   color: var(--text-code);
 }

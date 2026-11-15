@@ -15,11 +15,7 @@ const ShortcutsManager = (() => {
   let shortcuts = { ...DEFAULT_SHORTCUTS };
   let activeRecordingAction = null;
 
-  const modal = document.getElementById('shortcutsModal');
-  const openBtn = document.getElementById('shortcutsBtn');
-  const closeBtn = document.getElementById('closeShortcutsBtn');
-  const saveBtn = document.getElementById('saveShortcutsBtn');
-  const resetBtn = document.getElementById('resetShortcutsBtn');
+  const settingsModal = document.getElementById('settingsModal');
   const renderHint = document.getElementById('renderShortcutHint');
 
   const actionButtons = {
@@ -109,18 +105,6 @@ const ShortcutsManager = (() => {
     if (renderHint) renderHint.innerHTML = `Shortcut: <kbd>${shortcuts.render.replace(/\+/g, '</kbd> + <kbd>')}</kbd>`;
   }
 
-  function openDialog() {
-    cancelRecording();
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden', 'false');
-  }
-
-  function closeDialog() {
-    cancelRecording();
-    modal.classList.remove('open');
-    modal.setAttribute('aria-hidden', 'true');
-  }
-
   function startRecording(action, buttonEl) {
     cancelRecording();
     activeRecordingAction = action;
@@ -135,8 +119,13 @@ const ShortcutsManager = (() => {
     updateUI();
   }
 
+  function reset() {
+    shortcuts = { ...DEFAULT_SHORTCUTS };
+    saveShortcuts();
+    cancelRecording();
+  }
+
   function handleKeydown(e) {
-    // Multi-key Recording Mode
     if (activeRecordingAction) {
       e.preventDefault();
       e.stopPropagation();
@@ -156,20 +145,17 @@ const ShortcutsManager = (() => {
       return;
     }
 
-    // Interactive Action Dispatching
     const isEditing = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
 
-    // 1. Render Document
     if (isMatch(e, shortcuts.render)) {
       e.preventDefault();
       window.App?.triggerRender();
       return;
     }
 
-    // 2. Close Dialog
     if (isMatch(e, shortcuts.close)) {
-      if (modal.classList.contains('open')) {
-        closeDialog();
+      if (settingsModal && settingsModal.classList.contains('open')) {
+        window.SettingsManager?.closeDialog();
         e.preventDefault();
         return;
       }
@@ -179,7 +165,6 @@ const ShortcutsManager = (() => {
       }
     }
 
-    // 3. Navigation & Copy (Only if not typing plain text in editor/search)
     const hasModifier = shortcuts.prev.includes('+') || shortcuts.next.includes('+') || shortcuts.copy.includes('+');
     if (isEditing && !hasModifier) return;
 
@@ -198,25 +183,6 @@ const ShortcutsManager = (() => {
     }
   }
 
-  if (openBtn) openBtn.addEventListener('click', openDialog);
-  if (closeBtn) closeBtn.addEventListener('click', closeDialog);
-  if (saveBtn) saveBtn.addEventListener('click', closeDialog);
-
-  if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeDialog();
-    });
-  }
-
-  if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-      shortcuts = { ...DEFAULT_SHORTCUTS };
-      saveShortcuts();
-      cancelRecording();
-      window.App?.showToast('Reset all shortcuts to defaults');
-    });
-  }
-
   Object.entries(actionButtons).forEach(([action, btn]) => {
     if (btn) {
       btn.addEventListener('click', () => startRecording(action, btn));
@@ -226,7 +192,11 @@ const ShortcutsManager = (() => {
   window.addEventListener('keydown', handleKeydown);
   loadShortcuts();
 
-  return { getShortcuts: () => ({ ...shortcuts }) };
+  return {
+    getShortcuts: () => ({ ...shortcuts }),
+    cancelRecording,
+    reset
+  };
 })();
 
 window.ShortcutsManager = ShortcutsManager;
