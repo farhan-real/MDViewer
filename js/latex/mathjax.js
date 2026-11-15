@@ -7,7 +7,16 @@ window.MathJax = {
     inlineMath: [['$', '$'], ['\\(', '\\)']],
     displayMath: [['$$', '$$'], ['\\[', '\\]']],
     processEscapes: true,
-    processEnvironments: true
+    processEnvironments: true,
+    macros: {
+      unicodeInt: ['\\mathop{\\vcenter{\\mathchoice{\\huge\\unicode{#1}\\,}{\\unicode{#1}}{\\unicode{#1}}{\\unicode{#1}}}\\,}\\nolimits', 1],
+      oiint: '\\unicodeInt{x222F}',
+      oiiint: '\\unicodeInt{x2230}',
+      ointclockwise: '\\unicodeInt{x2232}',
+      varointclockwise: '\\unicodeInt{x2232}',
+      ointctrclockwise: '\\unicodeInt{x2233}',
+      sqint: '\\unicodeInt{x2A16}'
+    }
   },
   options: {
     ignoreHtmlClass: 'tex2jax_ignore',
