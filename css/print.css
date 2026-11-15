@@ -71,12 +71,18 @@
     margin-top: 0 !important;
   }
 
-  /* Typography & Pagination Safety */
+  /* Typography, Crisp Weights & Pagination Safety */
+  .markdown-viewer strong,
+  .markdown-viewer b {
+    font-weight: 700 !important;
+  }
+
   .markdown-viewer h1,
   .markdown-viewer h2,
   .markdown-viewer h3,
   .markdown-viewer h4 {
     color: var(--text-strong) !important;
+    font-weight: 700 !important;
     break-after: avoid;
     page-break-after: avoid;
   }
@@ -150,7 +156,11 @@
     word-break: break-word;
   }
 
-  /* LaTeX & MathJax SVG scaling for Portrait & Landscape */
+  .markdown-viewer th {
+    font-weight: 700 !important;
+  }
+
+  /* LaTeX & MathJax SVG scaling and crisp glyph stroke for print */
   .math-display {
     overflow: visible !important;
     max-width: 100% !important;
@@ -170,6 +180,11 @@
     color: inherit !important;
   }
 
+  .markdown-viewer mjx-container[jax="SVG"] use[data-c],
+  .markdown-viewer mjx-container[jax="SVG"] path[data-c] {
+    stroke-width: 0 !important;
+  }
+
   /* Code Cards: wrap long lines instead of clipping */
   .code-card {
     overflow: visible !important;
@@ -179,6 +194,10 @@
   .code-header-bar {
     break-after: avoid;
     page-break-after: avoid;
+  }
+
+  .code-seq {
+    font-weight: 700 !important;
   }
 
   .code-name-label {
@@ -198,5 +217,11 @@
     white-space: pre-wrap !important;
     overflow-wrap: anywhere !important;
     word-break: break-word !important;
+  }
+
+  .token-keyword,
+  .token-boolean,
+  .token-tag {
+    font-weight: 600 !important;
   }
 }
