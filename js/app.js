@@ -4,7 +4,7 @@
  */
 const App = (() => {
   const STORAGE_KEY = 'mdviewer_document';
-  const DRAWER_BREAKPOINT = 1180;
+  const MOBILE_BREAKPOINT = 768;
 
   const viewer = document.getElementById('markdownViewer');
   const pasteModal = document.getElementById('pasteModal');
@@ -28,6 +28,7 @@ const App = (() => {
   const statCodeCount = document.getElementById('statCodeCount');
 
   let toastTimer;
+  let sidebarAnimTimer;
 
   function saveToStorage(content) {
     try {
@@ -103,14 +104,51 @@ const App = (() => {
     pasteModal.setAttribute('aria-hidden', 'true');
   }
 
+  function clearSidebarFlip() {
+    clearTimeout(sidebarAnimTimer);
+    tocSidebar.style.transition = '';
+    tocSidebar.style.transform = '';
+    viewer.style.transition = '';
+    viewer.style.transform = '';
+  }
+
   function toggleSidebar() {
-    if (window.innerWidth < DRAWER_BREAKPOINT) {
+    if (window.innerWidth <= MOBILE_BREAKPOINT) {
       const isOpen = tocSidebar.classList.toggle('open');
       sidebarBackdrop.classList.toggle('active', isOpen);
-    } else {
-      const isCollapsed = tocSidebar.classList.toggle('collapsed');
-      document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+      return;
     }
+
+    clearTimeout(sidebarAnimTimer);
+    tocSidebar.style.transition = 'none';
+    tocSidebar.style.transform = '';
+    viewer.style.transition = 'none';
+    viewer.style.transform = '';
+
+    const beforeViewerLeft = viewer.getBoundingClientRect().left;
+    const isCollapsed = tocSidebar.classList.toggle('collapsed');
+    const afterViewerLeft = viewer.getBoundingClientRect().left;
+
+    const viewerDx = beforeViewerLeft - afterViewerLeft;
+    const sidebarWidth = tocSidebar.offsetWidth || 290;
+    const sidebarDx = isCollapsed ? sidebarWidth : -sidebarWidth;
+
+    tocSidebar.style.transform = `translate3d(${sidebarDx}px, 0, 0)`;
+    viewer.style.transform = `translate3d(${viewerDx}px, 0, 0)`;
+
+    void tocSidebar.offsetWidth;
+
+    const ease = 'transform 180ms cubic-bezier(0.22, 1, 0.36, 1)';
+    tocSidebar.style.transition = ease;
+    viewer.style.transition = ease;
+    tocSidebar.style.transform = 'translate3d(0, 0, 0)';
+    viewer.style.transform = 'translate3d(0, 0, 0)';
+
+    sidebarAnimTimer = setTimeout(() => {
+      clearSidebarFlip();
+      TocController.refreshOffsets();
+      CodeNavigator.refreshOffsets();
+    }, 195);
   }
 
   openEditorBtn.addEventListener('click', openDialog);
@@ -163,12 +201,10 @@ const App = (() => {
   });
 
   window.addEventListener('resize', () => {
-    if (window.innerWidth >= DRAWER_BREAKPOINT) {
+    clearSidebarFlip();
+    if (window.innerWidth > MOBILE_BREAKPOINT) {
       tocSidebar.classList.remove('open');
       sidebarBackdrop.classList.remove('active');
-    } else {
-      tocSidebar.classList.remove('collapsed');
-      document.body.classList.remove('sidebar-collapsed');
     }
   });
 

@@ -35,7 +35,7 @@ const TocController = (() => {
     return escaped.replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
   }
 
-  function lockScrollspy(duration = 650) {
+  function lockScrollspy(duration = 700) {
     isProgrammaticScroll = true;
     clearTimeout(lockTimer);
     lockTimer = setTimeout(() => {
@@ -146,7 +146,7 @@ const TocController = (() => {
 
         const target = document.getElementById(h.id);
         if (target && scrollContainer) {
-          lockScrollspy(650);
+          lockScrollspy(700);
           setActive(h.id);
           scrollToElementTop(target);
           history.replaceState(null, '', `#${h.id}`);
@@ -156,7 +156,7 @@ const TocController = (() => {
             nav.syncToHeadingId(h.id);
           }
 
-          if (window.innerWidth < 1180) {
+          if (window.innerWidth <= 768) {
             document.getElementById('tocSidebar')?.classList.remove('open');
             document.getElementById('sidebarBackdrop')?.classList.remove('active');
           }
@@ -186,13 +186,7 @@ const TocController = (() => {
 
     if (nextLink) {
       nextLink.classList.add('active');
-      const top = nextLink.offsetTop;
-      const bottom = top + nextLink.offsetHeight;
-      const viewTop = container.scrollTop;
-      const viewBottom = viewTop + container.clientHeight;
-      if (top < viewTop || bottom > viewBottom) {
-        nextLink.scrollIntoView({ block: 'nearest' });
-      }
+      nextLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }
 
