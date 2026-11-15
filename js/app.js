@@ -88,6 +88,7 @@ const App = (() => {
       saveToStorage(source);
     }
 
+    window.DocCollapse?.init(viewer);
     TocController.render(headings);
     CodeNavigator.init(codeBlocks);
     updateDocumentStats(source, codeBlocks.length);

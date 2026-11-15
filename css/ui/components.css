@@ -23,6 +23,69 @@
   scroll-margin-top: 1.5rem;
 }
 
+.doc-heading-collapsible {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.doc-collapse-btn {
+  width: 1.25em;
+  height: 1.35em;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+  transition: background-color 90ms ease, color 90ms ease;
+}
+
+.doc-collapse-btn:hover {
+  color: var(--text-strong);
+  background: var(--bg-subtle);
+}
+
+.doc-collapse-btn svg {
+  transition: transform 140ms ease;
+}
+
+.doc-heading-collapsible.is-collapsed .doc-collapse-btn svg {
+  transform: rotate(-90deg);
+}
+
+.doc-heading-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-collapsed-badge {
+  display: none;
+  font-family: var(--font-mono);
+  font-size: 0.62em;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-dim);
+  padding: 0.04em 0.42em;
+  border-radius: var(--radius-pill);
+  vertical-align: middle;
+  margin-left: 0.42em;
+}
+
+.doc-heading-collapsible.is-collapsed .doc-collapsed-badge {
+  display: inline-block;
+}
+
+.doc-section-hidden {
+  display: none !important;
+}
+
 .markdown-viewer h1 {
   font-size: 1.9em;
   border-bottom: 1.5px solid var(--border-dim);

@@ -31,9 +31,13 @@ const CodeNavigator = (() => {
     }
     const baseTop = scrollContainer.getBoundingClientRect().top - scrollContainer.scrollTop;
     const nextTops = new Array(cachedElements.length);
+    let lastKnownTop = 0;
     for (let i = 0; i < cachedElements.length; i++) {
       const el = cachedElements[i];
-      nextTops[i] = el ? el.getBoundingClientRect().top - baseTop : 0;
+      if (el && !el.classList.contains('doc-section-hidden')) {
+        lastKnownTop = el.getBoundingClientRect().top - baseTop;
+      }
+      nextTops[i] = lastKnownTop;
     }
     blockTops = nextTops;
   }
@@ -188,6 +192,7 @@ const CodeNavigator = (() => {
 
     const el = cachedElements[activeIndex] || document.getElementById(current.id);
     if (el && scroll && scrollContainer) {
+      window.DocCollapse?.revealElement(el);
       isUserScrolling = false;
       clearTimeout(scrollReleaseTimer);
       clearTimeout(highlightTimer);

@@ -39,6 +39,7 @@
   .sidebar-backdrop,
   .code-copy-menu,
   .code-block-copy,
+  .doc-collapse-btn,
   .modal-backdrop,
   .toast-notification,
   .doc-end-spacer {
@@ -83,6 +84,10 @@
   .markdown-viewer strong,
   .markdown-viewer b {
     font-weight: 700 !important;
+  }
+
+  .doc-heading-collapsible {
+    display: block !important;
   }
 
   .markdown-viewer h1,

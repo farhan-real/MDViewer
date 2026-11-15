@@ -1,8 +1,10 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Uses cached heading elements, throttled offset refreshes, and rAF binary search for large docs.
+ * Supports independent hierarchical TOC collapsing and cached rAF binary-search scrollspy.
  */
 const TocController = (() => {
+  const CHEVRON_SVG = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+
   const container = document.getElementById('tocContainer');
   const counter = document.getElementById('tocCounter');
   const filterInput = document.getElementById('tocFilterInput');
@@ -10,7 +12,8 @@ const TocController = (() => {
 
   let cachedHeadings = [];
   let headingPositions = [];
-  let tocLinkMap = new Map();
+  let tocNodes = [];
+  const tocIndexMap = new Map();
   let currentActiveId = null;
   let currentFilter = '';
   let isProgrammaticScroll = false;
@@ -34,16 +37,13 @@ const TocController = (() => {
     if (typeof LatexEngine !== 'undefined') {
       return LatexEngine.formatInline(rawText, 'toc-code');
     }
-    const escaped = escapeHtml(rawText);
-    return escaped.replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
+    return escapeHtml(rawText).replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
   }
 
   function lockScrollspy(duration = 700) {
     isProgrammaticScroll = true;
     clearTimeout(lockTimer);
-    lockTimer = setTimeout(() => {
-      isProgrammaticScroll = false;
-    }, duration);
+    lockTimer = setTimeout(() => { isProgrammaticScroll = false; }, duration);
   }
 
   function unlockScrollspy() {
@@ -61,7 +61,7 @@ const TocController = (() => {
     const nextPositions = [];
     for (let i = 0; i < cachedHeadings.length; i++) {
       const h = cachedHeadings[i];
-      if (h.id) {
+      if (h.id && !h.classList.contains('doc-section-hidden')) {
         nextPositions.push({ id: h.id, top: h.getBoundingClientRect().top - baseTop });
       }
     }
@@ -88,9 +88,7 @@ const TocController = (() => {
     measureAndScroll();
     setTimeout(() => {
       const diff = (target.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top) - 20;
-      if (Math.abs(diff) > 28) {
-        measureAndScroll();
-      }
+      if (Math.abs(diff) > 28) measureAndScroll();
     }, 340);
 
     if (window.scrollY !== 0) window.scrollTo(0, 0);
@@ -120,10 +118,47 @@ const TocController = (() => {
     }
   }
 
+  function updateTocVisibility() {
+    const filtering = currentFilter.length > 0;
+    for (let i = 0; i < tocNodes.length; i++) {
+      const node = tocNodes[i];
+      const nextHidden = filtering
+        ? !node.titleLower.includes(currentFilter)
+        : (node.parentIndex !== -1 && (tocNodes[node.parentIndex].collapsed || tocNodes[node.parentIndex].isHidden));
+
+      if (nextHidden !== node.isHidden) {
+        node.isHidden = nextHidden;
+        node.rowEl.style.display = nextHidden ? 'none' : 'flex';
+      }
+    }
+  }
+
+  function navigateToHeading(id) {
+    const target = document.getElementById(id);
+    if (!target || !scrollContainer) return;
+
+    window.DocCollapse?.revealElement(target);
+    lockScrollspy(700);
+    setActive(id);
+    scrollToElementTop(target);
+    history.replaceState(null, '', `#${id}`);
+
+    const nav = window.CodeNavigator || null;
+    if (nav && typeof nav.syncToHeadingId === 'function') {
+      nav.syncToHeadingId(id);
+    }
+
+    if (window.innerWidth <= 768) {
+      document.getElementById('tocSidebar')?.classList.remove('open');
+      document.getElementById('sidebarBackdrop')?.classList.remove('active');
+    }
+  }
+
   function render(headings) {
     if (!container) return;
     container.innerHTML = '';
-    tocLinkMap.clear();
+    tocNodes = [];
+    tocIndexMap.clear();
     currentActiveId = null;
     counter.textContent = `${headings.length} items`;
 
@@ -135,54 +170,80 @@ const TocController = (() => {
     }
 
     const fragment = document.createDocumentFragment();
+    const stack = [];
 
-    headings.forEach((h) => {
+    headings.forEach((h, index) => {
+      while (stack.length && stack[stack.length - 1].level >= h.level) {
+        stack.pop();
+      }
+      const parentIndex = stack.length ? stack[stack.length - 1].index : -1;
+      stack.push({ level: h.level, index });
+
+      const hasChildren = index + 1 < headings.length && headings[index + 1].level > h.level;
+      const row = document.createElement('div');
+      row.className = `toc-row toc-level-${h.level}`;
+
+      let toggleBtn = null;
+      if (hasChildren) {
+        toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'toc-toggle-btn';
+        toggleBtn.setAttribute('aria-label', 'Toggle subheadings');
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.setAttribute('tabindex', '-1');
+        toggleBtn.innerHTML = CHEVRON_SVG;
+        toggleBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        toggleBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const node = tocNodes[index];
+          node.collapsed = !node.collapsed;
+          row.classList.toggle('is-collapsed', node.collapsed);
+          toggleBtn.setAttribute('aria-expanded', String(!node.collapsed));
+          updateTocVisibility();
+        });
+        row.appendChild(toggleBtn);
+      } else {
+        const spacer = document.createElement('span');
+        spacer.className = 'toc-toggle-spacer';
+        spacer.setAttribute('aria-hidden', 'true');
+        row.appendChild(spacer);
+      }
+
       const link = document.createElement('a');
       link.href = `#${h.id}`;
-      link.className = `toc-item toc-level-${h.level}`;
-      link.dataset.targetId = h.id;
-      link.dataset.title = h.text.toLowerCase().replace(/`/g, '');
+      link.className = 'toc-link';
       link.innerHTML = formatTocHtml(h.text);
       link.setAttribute('tabindex', '-1');
-
-      link.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-      });
-
+      link.addEventListener('mousedown', (e) => e.preventDefault());
       link.addEventListener('click', (e) => {
         e.preventDefault();
         link.blur();
-
         if (document.activeElement && document.activeElement !== document.body) {
           document.activeElement.blur();
         }
-
-        const target = document.getElementById(h.id);
-        if (target && scrollContainer) {
-          lockScrollspy(700);
-          setActive(h.id);
-          scrollToElementTop(target);
-          history.replaceState(null, '', `#${h.id}`);
-
-          const nav = window.CodeNavigator || null;
-          if (nav && typeof nav.syncToHeadingId === 'function') {
-            nav.syncToHeadingId(h.id);
-          }
-
-          if (window.innerWidth <= 768) {
-            document.getElementById('tocSidebar')?.classList.remove('open');
-            document.getElementById('sidebarBackdrop')?.classList.remove('active');
-          }
-        }
+        navigateToHeading(h.id);
       });
 
-      tocLinkMap.set(h.id, link);
-      fragment.appendChild(link);
+      row.appendChild(link);
+      fragment.appendChild(row);
+
+      tocIndexMap.set(h.id, index);
+      tocNodes.push({
+        index,
+        level: h.level,
+        id: h.id,
+        titleLower: h.text.toLowerCase().replace(/`/g, ''),
+        parentIndex,
+        collapsed: false,
+        isHidden: false,
+        rowEl: row
+      });
     });
 
     container.appendChild(fragment);
     cachedHeadings = Array.from(document.querySelectorAll('.markdown-viewer h1, .markdown-viewer h2, .markdown-viewer h3, .markdown-viewer h4'));
-    applyFilter();
+    updateTocVisibility();
     attachListeners();
     refreshOffsets();
   }
@@ -190,15 +251,20 @@ const TocController = (() => {
   function setActive(id) {
     if (!container || !id || id === currentActiveId) return;
 
-    const prevLink = currentActiveId ? tocLinkMap.get(currentActiveId) : null;
-    if (prevLink) prevLink.classList.remove('active');
+    const prevIdx = currentActiveId ? tocIndexMap.get(currentActiveId) : undefined;
+    if (prevIdx !== undefined && tocNodes[prevIdx]) {
+      tocNodes[prevIdx].rowEl.classList.remove('active');
+    }
 
-    const nextLink = tocLinkMap.get(id);
+    const nextIdx = tocIndexMap.get(id);
     currentActiveId = id;
 
-    if (nextLink) {
-      nextLink.classList.add('active');
-      nextLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (nextIdx !== undefined && tocNodes[nextIdx]) {
+      const node = tocNodes[nextIdx];
+      node.rowEl.classList.add('active');
+      if (!node.isHidden) {
+        node.rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
     }
   }
 
@@ -223,27 +289,13 @@ const TocController = (() => {
     setActive(activeId);
   }
 
-  function applyFilter() {
-    tocLinkMap.forEach((el) => {
-      const shouldShow = el.dataset.title.includes(currentFilter);
-      const isHidden = el.dataset.hidden === '1';
-      if (shouldShow && isHidden) {
-        el.style.display = 'block';
-        el.dataset.hidden = '0';
-      } else if (!shouldShow && !isHidden) {
-        el.style.display = 'none';
-        el.dataset.hidden = '1';
-      }
-    });
-  }
-
   filterInput.addEventListener('input', (e) => {
     currentFilter = e.target.value.toLowerCase().trim();
     if (filterRaf) return;
     filterRaf = true;
     requestAnimationFrame(() => {
       filterRaf = false;
-      applyFilter();
+      updateTocVisibility();
     });
   });
 
