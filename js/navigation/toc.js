@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Supports independent TOC collapsing, idle-deferred offset caching, and overshoot-free jumps.
+ * Supports independent TOC collapsing, idle-deferred offset caching, and jitter-free far jumps.
  */
 const TocController = (() => {
   const CHEVRON_SVG = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"></polyline></svg>';
@@ -17,6 +17,9 @@ const TocController = (() => {
   let currentActiveId = null;
   let currentFilter = '';
   let isProgrammaticScroll = false;
+  let awaitingScrollEnd = false;
+  let expectedEndY = null;
+  let activeNavToken = 0;
   let lockTimer = null;
   let listenersAttached = false;
   let rafScheduled = false;
@@ -42,14 +45,22 @@ const TocController = (() => {
     return escapeHtml(rawText).replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
   }
 
-  function lockScrollspy(duration = 1600) {
+  function lockScrollspy(duration = 1800) {
+    activeNavToken++;
+    const token = activeNavToken;
     isProgrammaticScroll = true;
+    awaitingScrollEnd = false;
+    expectedEndY = null;
     clearTimeout(lockTimer);
-    lockTimer = setTimeout(unlockScrollspy, duration);
+    lockTimer = setTimeout(() => unlockScrollspy(token), duration);
+    return token;
   }
 
-  function unlockScrollspy() {
+  function unlockScrollspy(token) {
+    if (token !== undefined && token !== activeNavToken) return;
     isProgrammaticScroll = false;
+    awaitingScrollEnd = false;
+    expectedEndY = null;
     clearTimeout(lockTimer);
     refreshOffsets();
   }
@@ -88,29 +99,35 @@ const TocController = (() => {
     return Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (tRect.top - cRect.top) - 20));
   }
 
-  function scrollToElementTop(target) {
+  function scrollToElementTop(target, token) {
     if (!scrollContainer || !target) return;
     const initialY = getClampedTargetTop(target);
     const distance = Math.abs(initialY - scrollContainer.scrollTop);
 
     if (distance < 2) {
-      unlockScrollspy();
+      unlockScrollspy(token);
       return;
     }
 
     if (distance <= scrollContainer.clientHeight * 2.2) {
+      expectedEndY = initialY;
+      awaitingScrollEnd = true;
       scrollContainer.scrollTo({ top: initialY, behavior: 'smooth' });
     } else {
-      // Far jump across unrendered chunks: land cleanly first, align after chunk layout, then glide
       scrollContainer.scrollTop = initialY;
       requestAnimationFrame(() => {
+        if (token !== activeNavToken) return;
         const exactY = getClampedTargetTop(target);
-        const preY = exactY > 64 ? exactY - 64 : exactY;
+        const preY = exactY > 40 ? exactY - 40 : exactY;
         scrollContainer.scrollTop = preY;
         if (Math.abs(exactY - preY) >= 2) {
+          expectedEndY = exactY;
+          requestAnimationFrame(() => {
+            if (token === activeNavToken) awaitingScrollEnd = true;
+          });
           scrollContainer.scrollTo({ top: exactY, behavior: 'smooth' });
         } else {
-          unlockScrollspy();
+          unlockScrollspy(token);
         }
       });
     }
@@ -134,7 +151,9 @@ const TocController = (() => {
     }, { passive: true });
 
     scrollContainer.addEventListener('scrollend', () => {
-      if (isProgrammaticScroll) unlockScrollspy();
+      if (!isProgrammaticScroll || !awaitingScrollEnd) return;
+      if (expectedEndY !== null && Math.abs(scrollContainer.scrollTop - expectedEndY) > 10) return;
+      unlockScrollspy(activeNavToken);
     }, { passive: true });
 
     document.addEventListener('mdviewer:typeset', scheduleRefreshOffsets);
@@ -167,9 +186,9 @@ const TocController = (() => {
     if (!target || !scrollContainer) return;
 
     window.DocCollapse?.revealElement(target);
-    lockScrollspy(1600);
+    const token = lockScrollspy(1800);
     setActive(id, true);
-    scrollToElementTop(target);
+    scrollToElementTop(target, token);
     history.replaceState(null, '', `#${id}`);
 
     const nav = window.CodeNavigator || null;

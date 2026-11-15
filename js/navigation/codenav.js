@@ -1,6 +1,6 @@
 /**
  * Simple Code Copy Menu Controller
- * Uses cached code card references, idle-deferred offset refreshes, and overshoot-free jumps.
+ * Uses cached code card references, idle-deferred offset refreshes, and jitter-free far jumps.
  */
 const CodeNavigator = (() => {
   let blocks = [];
@@ -8,6 +8,9 @@ const CodeNavigator = (() => {
   let blockTops = [];
   let activeIndex = 0;
   let isUserScrolling = true;
+  let awaitingScrollEnd = false;
+  let expectedEndY = null;
+  let activeJumpToken = 0;
   let scrollReleaseTimer;
   let highlightTimer;
   let offsetRefreshTimer = null;
@@ -53,8 +56,11 @@ const CodeNavigator = (() => {
     }, delay);
   }
 
-  function finishProgrammaticScroll() {
+  function finishProgrammaticScroll(token) {
+    if (token !== undefined && token !== activeJumpToken) return;
     isUserScrolling = true;
+    awaitingScrollEnd = false;
+    expectedEndY = null;
     clearTimeout(scrollReleaseTimer);
     refreshOffsets();
   }
@@ -75,7 +81,9 @@ const CodeNavigator = (() => {
     }, { passive: true });
 
     scrollContainer.addEventListener('scrollend', () => {
-      if (!isUserScrolling) finishProgrammaticScroll();
+      if (isUserScrolling || !awaitingScrollEnd) return;
+      if (expectedEndY !== null && Math.abs(scrollContainer.scrollTop - expectedEndY) > 10) return;
+      finishProgrammaticScroll(activeJumpToken);
     }, { passive: true });
 
     document.addEventListener('mdviewer:typeset', scheduleRefreshOffsets);
@@ -86,6 +94,8 @@ const CodeNavigator = (() => {
     blocks = codeBlockData || [];
     activeIndex = 0;
     highlightedCard = null;
+    awaitingScrollEnd = false;
+    expectedEndY = null;
 
     if (!blocks.length) {
       menu.style.display = 'none';
@@ -142,28 +152,35 @@ const CodeNavigator = (() => {
     return Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2)));
   }
 
-  function scrollToElementCenter(el) {
+  function scrollToElementCenter(el, token) {
     if (!scrollContainer || !el) return;
     const initialY = getClampedCenterTop(el);
     const distance = Math.abs(initialY - scrollContainer.scrollTop);
 
     if (distance < 2) {
-      finishProgrammaticScroll();
+      finishProgrammaticScroll(token);
       return;
     }
 
     if (distance <= scrollContainer.clientHeight * 2.2) {
+      expectedEndY = initialY;
+      awaitingScrollEnd = true;
       scrollContainer.scrollTo({ top: initialY, behavior: 'smooth' });
     } else {
       scrollContainer.scrollTop = initialY;
       requestAnimationFrame(() => {
+        if (token !== activeJumpToken) return;
         const exactY = getClampedCenterTop(el);
-        const preY = exactY > 64 ? exactY - 64 : exactY;
+        const preY = exactY > 40 ? exactY - 40 : exactY;
         scrollContainer.scrollTop = preY;
         if (Math.abs(exactY - preY) >= 2) {
+          expectedEndY = exactY;
+          requestAnimationFrame(() => {
+            if (token === activeJumpToken) awaitingScrollEnd = true;
+          });
           scrollContainer.scrollTo({ top: exactY, behavior: 'smooth' });
         } else {
-          finishProgrammaticScroll();
+          finishProgrammaticScroll(token);
         }
       });
     }
@@ -207,13 +224,17 @@ const CodeNavigator = (() => {
     const headingId = getHeadingIdForBlock(current);
     const toc = window.TocController || null;
     if (toc) {
-      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(1600);
+      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(1800);
       if (headingId) toc.setActive(headingId, true);
     }
 
     if (el && scrollContainer) {
       window.DocCollapse?.revealElement(el);
+      activeJumpToken++;
+      const token = activeJumpToken;
       isUserScrolling = false;
+      awaitingScrollEnd = false;
+      expectedEndY = null;
       clearTimeout(scrollReleaseTimer);
       clearTimeout(highlightTimer);
 
@@ -223,14 +244,14 @@ const CodeNavigator = (() => {
       el.classList.add('target-highlight');
       highlightedCard = el;
 
-      scrollToElementCenter(el);
+      scrollToElementCenter(el, token);
 
       highlightTimer = setTimeout(() => {
         el.classList.remove('target-highlight');
         if (highlightedCard === el) highlightedCard = null;
       }, 750);
 
-      scrollReleaseTimer = setTimeout(finishProgrammaticScroll, 1600);
+      scrollReleaseTimer = setTimeout(() => finishProgrammaticScroll(token), 1800);
     }
   }
 
@@ -249,12 +270,15 @@ const CodeNavigator = (() => {
     }
 
     if (targetIndex !== -1) {
+      activeJumpToken++;
+      const token = activeJumpToken;
       isUserScrolling = false;
+      awaitingScrollEnd = false;
       if (targetIndex !== activeIndex) jumpTo(targetIndex, false);
       clearTimeout(scrollReleaseTimer);
       scrollReleaseTimer = setTimeout(() => {
-        isUserScrolling = true;
-      }, 1600);
+        if (token === activeJumpToken) isUserScrolling = true;
+      }, 1800);
     }
   }
 
