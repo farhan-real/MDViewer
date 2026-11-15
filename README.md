@@ -1,6 +1,6 @@
 # MDViewer
 
-MDViewer is a standalone, offline, hyper-modular Markdown viewer engineered with a custom AMOLED dark theme. It features automatic code block extraction, regex-driven filename detection, an interactive Table of Contents outline, and a dedicated sequential Code Copy Menu.
+MDViewer is a standalone, hyper-modular Markdown viewer engineered with a custom AMOLED dark default theme and a crisp light mode. It runs directly from `index.html` over `file://` with no installation, build step, or local server required, featuring automatic code block extraction, regex-driven filename detection, full LaTeX math typesetting, theme-aware A4 print export, customizable settings, an interactive Table of Contents outline, and a dedicated sequential Code Copy Menu.
 
 ---
 
@@ -12,19 +12,23 @@ Launch the application directly in your browser:
 
 Alternatively, run locally without any installation or server required:
 1. Download or clone this repository.
-2. Open `index.html` directly in any desktop or mobile browser.
+2. Open `index.html` directly in any desktop or mobile browser (`file://`).
 
 ---
 
 ## Key Features
 
-- **AMOLED Dark Mode**: Pure black background tailored for modern displays, with clean and professional Indigo accents.
-- **Syntax Highlighting**: Built-in syntax highlighting for JavaScript, TypeScript, Python, JSON, Bash, YAML, SQL, and HTML.
+- **AMOLED Dark & Light Themes**: Pure black AMOLED dark mode by default with Indigo accents, plus an instant header toggle to a clean light theme with persisted preference in `localStorage`.
+- **Full LaTeX Support**: Powered by MathJax v3 (`tex-svg-full.js`) with `ams`, `cancel`, `mhchem`, `mathtools`, `boldsymbol`, `bussproofs`, `amscd`, `extpfeil`, and `braket` enabled out of the box (plus `\require{physics}` on demand)—working directly when `index.html` is opened locally via `file://`.
+  - **Inline Math**: `$...$` and `\(...\)` inside paragraphs, headings, lists, blockquotes, TOC headings, and table cells (with pipe-safe splitting for expressions like `$|x|$`).
+  - **Display Math**: `$$...$$`, `\[...\]`, fenced ` ```math ` blocks, blockquote math, and standalone environments (`\begin{align}`, `\begin{aligned}`, `\begin{equation}`, `\begin{gather}`, `\begin{cases}`, `\begin{bmatrix}`, etc.).
+- **Theme-Aware Print / PDF Support**: Clean A4 Portrait and Landscape printing from either Dark or Light mode, with dynamically themed `@page` margins and page counters, proportional font scaling, line-wrapped code cards, repeating table headers, and crisp auto-scaled MathJax SVGs.
+- **Settings & Font Size Control**: Unified Settings modal featuring a 7-step font size selector (`12px`–`18px` with `15px` middle default) reflected in both the viewer and print output, alongside customizable multi-key keyboard shortcuts.
+- **Syntax Highlighting**: Built-in offline syntax highlighting for JavaScript, TypeScript, Python, JSON, Bash, YAML, SQL, and HTML with adaptive dark and light token palettes.
 - **Dedicated Code Copy Menu**: Docked floating navigator showing block sequence numbers, context names (filename or parent heading), traversal, and one-click clipboard copying.
 - **Smart Heading Filename Extractor**: When a code block fence omits a filename (e.g., ` ```python `), MDViewer inspects the heading directly above it using strict regex validation to extract and display filenames like `gateway.config.json` or `dispatcher.ts`.
-- **Interactive TOC**: Hierarchical TOC on the left sidebar with live highlighting, search filtering, and code formatting for headings with backticks (e.g., `` `src/app.js` ``).
-- **Local Persistence**: Automatically saves the active document to browser `localStorage`, ensuring instant restoration between sessions without cloud reliance.
-- **Zero Dependencies**: 100% self-contained JavaScript, CSS, and HTML with no external libraries or CDN requests.
+- **Smooth 200Hz Interactive TOC**: Hierarchical left sidebar with GPU-composited FLIP/drawer transitions, `requestAnimationFrame` cached binary-search scrollspy, search filtering, inline LaTeX rendering, and backtick code styling.
+- **Local Persistence**: Automatically saves your active document, theme, font size, and custom shortcuts to browser `localStorage`.
 
 ---
 
@@ -32,31 +36,45 @@ Alternatively, run locally without any installation or server required:
 
 ```text
 .
-├── index.html          # Application layout, TOC drawer, viewer, and modal markup
-├── README.md           # Project documentation and specifications
+├── index.html              # Application layout, TOC drawer, viewer, MathJax loader, and modals
+├── README.md               # Project documentation and specifications
+├── ai.md                   # Project structure and development guidelines
 ├── css/
-│   ├── base.css        # Core AMOLED variables, typography, and responsive grid
-│   ├── components.css  # TOC tree, code blocks, copy menu, and modal card styling
-│   └── syntax.css      # AMOLED syntax highlighting token styles
+│   ├── themes.css          # AMOLED dark (default) and light theme variables & font size token
+│   ├── base.css            # Core reset, scrollbars, header, buttons, and workspace layout
+│   ├── syntax.css          # Dark and light syntax highlighting token styles
+│   ├── print.css           # Theme-aware A4 portrait and landscape print stylesheet
+│   └── ui/
+│       ├── sidebar.css     # TOC sidebar, outline tree, search filter, and mobile drawer
+│       ├── components.css  # Markdown typography, LaTeX math containers, and code cards
+│       ├── modals.css      # Modal backdrop and Paste Markdown dialog styling
+│       ├── settings.css    # Settings dialog, 7-step font-size selector, and shortcut rows
+│       └── overlays.css    # Floating Code Copy Menu, toast notifications, and mobile tweaks
 └── js/
-    ├── highlighter.js  # Offline multi-language syntax highlighting engine
-    ├── parser.js       # Offline Markdown parser and regex heading filename engine
-    ├── toc.js          # Table of Contents builder, search filter, and scrollspy
-    ├── codenav.js      # Code Copy Menu controller and keyboard traversal
-    └── app.js          # State coordinator, modal lifecycle, and localStorage sync
+    ├── app.js              # Master state coordinator, FLIP sidebar toggle, and storage sync
+    ├── theme.js            # Light/dark theme toggle and dynamic print page margin styling
+    ├── settings.js         # Settings dialog lifecycle and 7-step font-size controller
+    ├── shortcuts.js        # Multi-key shortcut configurator and global key dispatcher
+    ├── sample.js           # Default sample Markdown and LaTeX documentation preset
+    ├── latex/
+    │   ├── mathjax.js      # MathJax v3 configuration and asynchronous SVG typesetting queue
+    │   └── latex.js        # LaTeX extraction, Markdown protection, and table-safe splitting
+    ├── markdown/
+    │   ├── highlighter.js  # Offline multi-language syntax highlighting engine
+    │   └── parser.js       # Markdown parser, LaTeX block integration, and filename regex engine
+    └── navigation/
+        ├── toc.js          # Table of Contents builder, search filter, and rAF scrollspy
+        └── codenav.js      # Code Copy Menu controller and cached binary-search scrollsync
 ```
 
 ---
 
 ## Regex Filename Validation
 
-When parsing code blocks without an explicit filename in the fence, `js/parser.js` extracts filename candidates from the preceding heading:
+When parsing code blocks without an explicit filename in the fence, `js/markdown/parser.js` extracts filename candidates from the preceding heading:
 
 ```javascript
-// Filename regex validator
 const FILENAME_VALIDATOR = /^([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]{1,8}|Dockerfile|Makefile|Vagrantfile|docker-compose\.ya?ml)$/i;
-
-// Extraction pattern from heading text
 const HEADING_FILENAME_EXTRACTOR = /(?:(?:file(?:name)?|path):\s*)?`?([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]{1,8}|Dockerfile|Makefile|Vagrantfile)`?/i;
 ```
 
@@ -66,22 +84,24 @@ If matched, the code block adopts the filename as its primary label in both the 
 
 ## Keyboard Shortcuts
 
+Default shortcuts (all customizable with single keys or multi-key combinations in **Settings**):
+
 | Shortcut | Context | Action |
 | :--- | :--- | :--- |
 | `P` | Global Viewer | Jump to previous code block and highlight |
 | `N` | Global Viewer | Jump to next code block and highlight |
 | `C` | Global Viewer | Copy active code block to clipboard |
 | `Ctrl` + `Enter` | Paste Dialog | Render document and save to storage |
-| `Escape` | Paste Dialog | Dismiss dialog without applying |
+| `Escape` | Active Dialog | Dismiss active Settings or Paste dialog |
 
 ---
 
 ## Quick Usage
 
-1. Open **[https://farhan-real.github.io/MDViewer/](https://farhan-real.github.io/MDViewer/)**.
-2. Click **Paste / Edit** in the top navigation bar.
-3. Enter your raw Markdown content and click **Render**.
-4. Use the bottom-right **Code Copy Menu** or block headers to copy code snippets instantly.
+1. Open **[https://farhan-real.github.io/MDViewer/](https://farhan-real.github.io/MDViewer/)** or open `index.html` locally.
+2. Click **Paste / Edit** in the top navigation bar, enter Markdown + LaTeX, and click **Render**.
+3. Use the header controls to switch **Light / Dark theme**, adjust **Font Size & Shortcuts** in **Settings**, or **Print / Save as PDF** (`Ctrl+P`).
+4. Use the bottom-right **Code Copy Menu** or block headers to navigate and copy code snippets instantly.
 
 ---
 
