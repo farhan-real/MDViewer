@@ -1,10 +1,8 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Supports independent TOC collapsing, idle-deferred offset caching, and jitter-free far jumps.
+ * Coordinates TOC tree rendering via TocTree, idle-deferred offset caching, and jitter-free jumps.
  */
 const TocController = (() => {
-  const CHEVRON_SVG = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-
   const container = document.getElementById('tocContainer');
   const counter = document.getElementById('tocCounter');
   const filterInput = document.getElementById('tocFilterInput');
@@ -13,9 +11,8 @@ const TocController = (() => {
   let cachedHeadings = [];
   let headingPositions = [];
   let tocNodes = [];
-  const tocIndexMap = new Map();
+  let tocIndexMap = new Map();
   let currentActiveId = null;
-  let currentFilter = '';
   let isProgrammaticScroll = false;
   let awaitingScrollEnd = false;
   let expectedEndY = null;
@@ -28,22 +25,6 @@ const TocController = (() => {
   let filterRaf = false;
   let lastUserScrollTime = 0;
   let resizeObserver = null;
-
-  function escapeHtml(str) {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  function formatTocHtml(rawText) {
-    if (typeof LatexEngine !== 'undefined') {
-      return LatexEngine.formatInline(rawText, 'toc-code');
-    }
-    return escapeHtml(rawText).replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
-  }
 
   function lockScrollspy(duration = 1800) {
     activeNavToken++;
@@ -166,21 +147,6 @@ const TocController = (() => {
     }
   }
 
-  function updateTocVisibility() {
-    const filtering = currentFilter.length > 0;
-    for (let i = 0; i < tocNodes.length; i++) {
-      const node = tocNodes[i];
-      const nextHidden = filtering
-        ? !node.titleLower.includes(currentFilter)
-        : (node.parentIndex !== -1 && (tocNodes[node.parentIndex].collapsed || tocNodes[node.parentIndex].isHidden));
-
-      if (nextHidden !== node.isHidden) {
-        node.isHidden = nextHidden;
-        node.rowEl.style.display = nextHidden ? 'none' : 'flex';
-      }
-    }
-  }
-
   function navigateToHeading(id) {
     const target = document.getElementById(id);
     if (!target || !scrollContainer) return;
@@ -202,93 +168,29 @@ const TocController = (() => {
     }
   }
 
-  function render(headings) {
+  function render(headings, docKey = '') {
     if (!container) return;
     container.innerHTML = '';
     tocNodes = [];
-    tocIndexMap.clear();
+    tocIndexMap = new Map();
     currentActiveId = null;
     counter.textContent = `${headings.length} items`;
 
     if (!headings.length) {
       container.innerHTML = '<div style="padding:1rem;color:var(--text-faint);font-size:0.8rem;">No headings detected</div>';
+      window.TocTree?.clear();
       cachedHeadings = [];
       headingPositions = [];
       return;
     }
 
-    const fragment = document.createDocumentFragment();
-    const stack = [];
+    if (window.TocTree) {
+      const built = window.TocTree.build(container, headings, docKey, navigateToHeading);
+      tocNodes = built.nodes;
+      tocIndexMap = built.indexMap;
+    }
 
-    headings.forEach((h, index) => {
-      while (stack.length && stack[stack.length - 1].level >= h.level) stack.pop();
-      const parentIndex = stack.length ? stack[stack.length - 1].index : -1;
-      stack.push({ level: h.level, index });
-
-      const hasChildren = index + 1 < headings.length && headings[index + 1].level > h.level;
-      const row = document.createElement('div');
-      row.className = `toc-row toc-level-${h.level}`;
-
-      if (hasChildren) {
-        const toggleBtn = document.createElement('button');
-        toggleBtn.type = 'button';
-        toggleBtn.className = 'toc-toggle-btn';
-        toggleBtn.setAttribute('aria-label', 'Toggle subheadings');
-        toggleBtn.setAttribute('aria-expanded', 'true');
-        toggleBtn.setAttribute('tabindex', '-1');
-        toggleBtn.innerHTML = CHEVRON_SVG;
-        toggleBtn.addEventListener('mousedown', (e) => e.preventDefault());
-        toggleBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const node = tocNodes[index];
-          node.collapsed = !node.collapsed;
-          row.classList.toggle('is-collapsed', node.collapsed);
-          toggleBtn.setAttribute('aria-expanded', String(!node.collapsed));
-          updateTocVisibility();
-        });
-        row.appendChild(toggleBtn);
-      } else {
-        const spacer = document.createElement('span');
-        spacer.className = 'toc-toggle-spacer';
-        spacer.setAttribute('aria-hidden', 'true');
-        row.appendChild(spacer);
-      }
-
-      const link = document.createElement('a');
-      link.href = `#${h.id}`;
-      link.className = 'toc-link';
-      link.innerHTML = formatTocHtml(h.text);
-      link.setAttribute('tabindex', '-1');
-      link.addEventListener('mousedown', (e) => e.preventDefault());
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        link.blur();
-        if (document.activeElement && document.activeElement !== document.body) {
-          document.activeElement.blur();
-        }
-        navigateToHeading(h.id);
-      });
-
-      row.appendChild(link);
-      fragment.appendChild(row);
-
-      tocIndexMap.set(h.id, index);
-      tocNodes.push({
-        index,
-        level: h.level,
-        id: h.id,
-        titleLower: h.text.toLowerCase().replace(/`/g, ''),
-        parentIndex,
-        collapsed: false,
-        isHidden: false,
-        rowEl: row
-      });
-    });
-
-    container.appendChild(fragment);
     cachedHeadings = Array.from(document.querySelectorAll('.markdown-viewer h1, .markdown-viewer h2, .markdown-viewer h3, .markdown-viewer h4, .markdown-viewer h5, .markdown-viewer h6'));
-    updateTocVisibility();
     attachListeners();
     refreshOffsets();
   }
@@ -344,12 +246,12 @@ const TocController = (() => {
   }
 
   filterInput.addEventListener('input', (e) => {
-    currentFilter = e.target.value.toLowerCase().trim();
+    const query = e.target.value.toLowerCase().trim();
     if (filterRaf) return;
     filterRaf = true;
     requestAnimationFrame(() => {
       filterRaf = false;
-      updateTocVisibility();
+      window.TocTree?.setFilter(query);
     });
   });
 

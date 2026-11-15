@@ -1,11 +1,14 @@
 /**
  * Document Collapsible Headings Controller
- * Independently collapses/expands sections under headings in #markdownViewer across .md-chunk boundaries.
+ * Independently collapses/expands sections in #markdownViewer and persists state per document.
  */
 const DocCollapse = (() => {
+  const STORAGE_KEY = 'mdviewer_doc_collapsed';
   const CHEVRON_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
   let hiddenByMap = new WeakMap();
+  let collapsedIds = new Set();
+  let currentDocKey = '';
   let listenerAttached = false;
 
   function getHeadingLevel(el) {
@@ -30,7 +33,30 @@ const DocCollapse = (() => {
     return null;
   }
 
-  function setHeadingCollapsed(headingEl, shouldCollapse) {
+  function loadCollapsed(docKey) {
+    if (!docKey) return new Set();
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.hash === docKey && Array.isArray(parsed.ids)) {
+        return new Set(parsed.ids);
+      }
+    } catch {}
+    return new Set();
+  }
+
+  function saveCollapsed() {
+    if (!currentDocKey) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        hash: currentDocKey,
+        ids: Array.from(collapsedIds)
+      }));
+    } catch {}
+  }
+
+  function setHeadingCollapsed(headingEl, shouldCollapse, persist = true) {
     const level = getHeadingLevel(headingEl);
     if (!level) return;
 
@@ -40,6 +66,15 @@ const DocCollapse = (() => {
     headingEl.classList.toggle('is-collapsed', shouldCollapse);
     const btn = headingEl.querySelector('.doc-collapse-btn');
     if (btn) btn.setAttribute('aria-expanded', String(!shouldCollapse));
+
+    if (headingEl.id) {
+      if (shouldCollapse) {
+        collapsedIds.add(headingEl.id);
+      } else {
+        collapsedIds.delete(headingEl.id);
+      }
+      if (persist) saveCollapsed();
+    }
 
     let curr = getNextBlock(headingEl);
     while (curr) {
@@ -62,6 +97,10 @@ const DocCollapse = (() => {
       }
       curr = getNextBlock(curr);
     }
+
+    if (!shouldCollapse && persist) {
+      window.LatexRuntime?.recheckVisible?.();
+    }
   }
 
   function revealElement(targetEl) {
@@ -73,7 +112,7 @@ const DocCollapse = (() => {
     if (!set || !set.size) return;
 
     Array.from(set).forEach((headingEl) => {
-      setHeadingCollapsed(headingEl, false);
+      setHeadingCollapsed(headingEl, false, true);
     });
 
     window.TocController?.refreshOffsets();
@@ -96,15 +135,19 @@ const DocCollapse = (() => {
       if (!btn && window.getSelection && window.getSelection().toString().length > 0) return;
 
       const nextState = !heading.classList.contains('is-collapsed');
-      setHeadingCollapsed(heading, nextState);
+      setHeadingCollapsed(heading, nextState, true);
       window.TocController?.refreshOffsets();
       window.CodeNavigator?.refreshOffsets();
     });
   }
 
-  function init(viewer) {
+  function init(viewer, docKey) {
     if (!viewer) return;
     hiddenByMap = new WeakMap();
+    currentDocKey = docKey || '';
+    const savedSet = loadCollapsed(currentDocKey);
+    collapsedIds = new Set();
+
     attachDelegatedListener(viewer);
 
     const headings = viewer.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -137,6 +180,10 @@ const DocCollapse = (() => {
       h.classList.add('doc-heading-collapsible');
       h.appendChild(toggleBtn);
       h.appendChild(textWrap);
+
+      if (h.id && savedSet.has(h.id)) {
+        setHeadingCollapsed(h, true, false);
+      }
     }
   }
 

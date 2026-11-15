@@ -1,6 +1,6 @@
 /**
  * Master Application Coordinator
- * Manages document rendering, delegated copy handling, LaTeX flushing for print, and modals.
+ * Manages document rendering, collapse state keys, delegated copy handling, and modals.
  */
 const App = (() => {
   const STORAGE_KEY = 'mdviewer_document';
@@ -30,6 +30,15 @@ const App = (() => {
   let activeCodeBlocks = [];
   let toastTimer;
   let sidebarAnimTimer;
+
+  function fastHash(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(36);
+  }
 
   function saveToStorage(content) {
     try {
@@ -80,6 +89,7 @@ const App = (() => {
   }
 
   function renderMarkdownContent(source, persist = true) {
+    const docKey = fastHash(source);
     const { html, headings, codeBlocks } = MarkdownParser.parse(source);
     activeCodeBlocks = codeBlocks;
     viewer.innerHTML = html;
@@ -88,8 +98,8 @@ const App = (() => {
       saveToStorage(source);
     }
 
-    window.DocCollapse?.init(viewer);
-    TocController.render(headings);
+    window.DocCollapse?.init(viewer, docKey);
+    TocController.render(headings, docKey);
     CodeNavigator.init(codeBlocks);
     updateDocumentStats(source, codeBlocks.length);
 

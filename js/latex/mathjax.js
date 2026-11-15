@@ -1,6 +1,6 @@
 /**
  * MathJax v3 Configuration & Progressive Lazy Typeset Queue
- * Typesets only near-viewport chunks in tiny 3-item batches so fast scrolling stays 200Hz smooth.
+ * Typesets only visible/near-viewport chunks in tiny 3-item batches for 200Hz scrolling.
  */
 window.MathJax = {
   tex: {
@@ -55,11 +55,20 @@ const LatexRuntime = (() => {
     const nodes = root.querySelectorAll('.math-tex');
     const pending = [];
     for (let i = 0; i < nodes.length; i++) {
-      if (!nodes[i].querySelector('mjx-container')) {
-        pending.push(nodes[i]);
+      const node = nodes[i];
+      if (!node.querySelector('mjx-container') && !node.closest('.doc-section-hidden')) {
+        pending.push(node);
       }
     }
     return pending;
+  }
+
+  function hasAnyHiddenUntypeset(root) {
+    const nodes = root.querySelectorAll('.math-tex');
+    for (let i = 0; i < nodes.length; i++) {
+      if (!nodes[i].querySelector('mjx-container')) return true;
+    }
+    return false;
   }
 
   function isChunkNearViewport(chunk, scrollRoot) {
@@ -85,7 +94,9 @@ const LatexRuntime = (() => {
           await nextFrame();
         }
       }
-      if (isChunk) container.dataset.mathDone = '1';
+      if (isChunk && !hasAnyHiddenUntypeset(container)) {
+        container.dataset.mathDone = '1';
+      }
       document.dispatchEvent(new CustomEvent('mdviewer:typeset'));
     } catch (err) {
       console.warn('MathJax typeset warning:', err);
@@ -105,7 +116,6 @@ const LatexRuntime = (() => {
         const chunk = iterator.next().value;
         pendingChunks.delete(chunk);
 
-        // Skip intermediate chunks scrolled past during fast flings; IO re-queues if revisited
         if (scrollRoot && !isChunkNearViewport(chunk, scrollRoot)) {
           continue;
         }
@@ -182,6 +192,24 @@ const LatexRuntime = (() => {
     drainQueue(gen);
   }
 
+  function recheckVisible() {
+    if (!isReady) return;
+    const viewer = activeTargets[0];
+    const scrollRoot = document.getElementById('viewerWorkspace');
+    if (!viewer || !scrollRoot) return;
+
+    const chunks = viewer.querySelectorAll('.md-chunk');
+    let added = false;
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      if (!chunk.dataset.mathDone && isChunkNearViewport(chunk, scrollRoot) && getUntypesetNodes(chunk).length) {
+        pendingChunks.add(chunk);
+        added = true;
+      }
+    }
+    if (added) drainQueue(generation);
+  }
+
   function typeset(targets) {
     const elements = (Array.isArray(targets) ? targets : [targets]).filter(Boolean);
     if (!elements.length) return Promise.resolve();
@@ -204,7 +232,7 @@ const LatexRuntime = (() => {
     const gen = generation;
     for (let i = 0; i < chunks.length; i++) {
       if (gen !== generation) return;
-      if (!chunks[i].dataset.mathDone && chunks[i].querySelector('.math-tex')) {
+      if (!chunks[i].dataset.mathDone && getUntypesetNodes(chunks[i]).length) {
         await typesetContainerBatched(chunks[i], gen, true);
       }
     }
@@ -225,7 +253,7 @@ const LatexRuntime = (() => {
           window.MathJax.typeset(pending);
           chunk.style.contentVisibility = '';
         }
-        chunk.dataset.mathDone = '1';
+        if (!hasAnyHiddenUntypeset(chunk)) chunk.dataset.mathDone = '1';
       }
     }
   }
@@ -243,7 +271,7 @@ const LatexRuntime = (() => {
     }
   }
 
-  return { typeset, onReady, flushAll, flushSync, hasPendingMath };
+  return { typeset, onReady, flushAll, flushSync, hasPendingMath, recheckVisible };
 })();
 
 window.LatexRuntime = LatexRuntime;
