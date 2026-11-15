@@ -6,6 +6,11 @@
   overflow-wrap: break-word;
 }
 
+.md-chunk {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
+
 .markdown-viewer h1,
 .markdown-viewer h2,
 .markdown-viewer h3,

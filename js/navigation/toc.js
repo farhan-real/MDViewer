@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Uses rAF-locked cached binary-search offsets for 200Hz zero-jank scrolling.
+ * Uses cached heading elements, throttled offset refreshes, and rAF binary search for large docs.
  */
 const TocController = (() => {
   const container = document.getElementById('tocContainer');
@@ -8,6 +8,7 @@ const TocController = (() => {
   const filterInput = document.getElementById('tocFilterInput');
   const scrollContainer = document.getElementById('viewerWorkspace');
 
+  let cachedHeadings = [];
   let headingPositions = [];
   let tocLinkMap = new Map();
   let currentActiveId = null;
@@ -16,6 +17,8 @@ const TocController = (() => {
   let lockTimer = null;
   let listenersAttached = false;
   let rafScheduled = false;
+  let offsetRefreshTimer = null;
+  let filterRaf = false;
   let resizeObserver = null;
 
   function escapeHtml(str) {
@@ -49,17 +52,15 @@ const TocController = (() => {
   }
 
   function refreshOffsets() {
-    if (!scrollContainer) return;
-    const headings = document.querySelectorAll('.markdown-viewer h1, .markdown-viewer h2, .markdown-viewer h3, .markdown-viewer h4');
-    if (!headings.length) {
+    if (!scrollContainer || !cachedHeadings.length) {
       headingPositions = [];
       return;
     }
 
     const baseTop = scrollContainer.getBoundingClientRect().top - scrollContainer.scrollTop;
     const nextPositions = [];
-    for (let i = 0; i < headings.length; i++) {
-      const h = headings[i];
+    for (let i = 0; i < cachedHeadings.length; i++) {
+      const h = cachedHeadings[i];
       if (h.id) {
         nextPositions.push({ id: h.id, top: h.getBoundingClientRect().top - baseTop });
       }
@@ -67,12 +68,31 @@ const TocController = (() => {
     headingPositions = nextPositions;
   }
 
+  function scheduleRefreshOffsets() {
+    if (offsetRefreshTimer) return;
+    offsetRefreshTimer = setTimeout(() => {
+      offsetRefreshTimer = null;
+      refreshOffsets();
+    }, 120);
+  }
+
   function scrollToElementTop(target) {
     if (!scrollContainer || !target) return;
-    const tRect = target.getBoundingClientRect();
-    const cRect = scrollContainer.getBoundingClientRect();
-    const targetY = scrollContainer.scrollTop + (tRect.top - cRect.top) - 20;
-    scrollContainer.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+    const measureAndScroll = () => {
+      const tRect = target.getBoundingClientRect();
+      const cRect = scrollContainer.getBoundingClientRect();
+      const targetY = scrollContainer.scrollTop + (tRect.top - cRect.top) - 20;
+      scrollContainer.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+    };
+
+    measureAndScroll();
+    setTimeout(() => {
+      const diff = (target.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top) - 20;
+      if (Math.abs(diff) > 28) {
+        measureAndScroll();
+      }
+    }, 340);
+
     if (window.scrollY !== 0) window.scrollTo(0, 0);
   }
 
@@ -90,20 +110,12 @@ const TocController = (() => {
     }, { passive: true });
 
     scrollContainer.addEventListener('scrollend', unlockScrollspy, { passive: true });
-    document.addEventListener('mdviewer:typeset', refreshOffsets);
-    window.addEventListener('resize', refreshOffsets, { passive: true });
+    document.addEventListener('mdviewer:typeset', scheduleRefreshOffsets);
+    window.addEventListener('resize', scheduleRefreshOffsets, { passive: true });
 
     const viewer = document.getElementById('markdownViewer');
     if (viewer && typeof ResizeObserver !== 'undefined') {
-      let resizeRaf = false;
-      resizeObserver = new ResizeObserver(() => {
-        if (resizeRaf) return;
-        resizeRaf = true;
-        requestAnimationFrame(() => {
-          resizeRaf = false;
-          refreshOffsets();
-        });
-      });
+      resizeObserver = new ResizeObserver(scheduleRefreshOffsets);
       resizeObserver.observe(viewer);
     }
   }
@@ -117,6 +129,7 @@ const TocController = (() => {
 
     if (!headings.length) {
       container.innerHTML = '<div style="padding:1rem;color:var(--text-faint);font-size:0.8rem;">No headings detected</div>';
+      cachedHeadings = [];
       headingPositions = [];
       return;
     }
@@ -168,6 +181,7 @@ const TocController = (() => {
     });
 
     container.appendChild(fragment);
+    cachedHeadings = Array.from(document.querySelectorAll('.markdown-viewer h1, .markdown-viewer h2, .markdown-viewer h3, .markdown-viewer h4'));
     applyFilter();
     attachListeners();
     refreshOffsets();
@@ -177,9 +191,7 @@ const TocController = (() => {
     if (!container || !id || id === currentActiveId) return;
 
     const prevLink = currentActiveId ? tocLinkMap.get(currentActiveId) : null;
-    if (prevLink) {
-      prevLink.classList.remove('active');
-    }
+    if (prevLink) prevLink.classList.remove('active');
 
     const nextLink = tocLinkMap.get(id);
     currentActiveId = id;
@@ -213,14 +225,26 @@ const TocController = (() => {
 
   function applyFilter() {
     tocLinkMap.forEach((el) => {
-      const match = el.dataset.title.includes(currentFilter);
-      el.style.display = match ? 'block' : 'none';
+      const shouldShow = el.dataset.title.includes(currentFilter);
+      const isHidden = el.dataset.hidden === '1';
+      if (shouldShow && isHidden) {
+        el.style.display = 'block';
+        el.dataset.hidden = '0';
+      } else if (!shouldShow && !isHidden) {
+        el.style.display = 'none';
+        el.dataset.hidden = '1';
+      }
     });
   }
 
   filterInput.addEventListener('input', (e) => {
     currentFilter = e.target.value.toLowerCase().trim();
-    applyFilter();
+    if (filterRaf) return;
+    filterRaf = true;
+    requestAnimationFrame(() => {
+      filterRaf = false;
+      applyFilter();
+    });
   });
 
   return { render, setActive, lockScrollspy, unlockScrollspy, refreshOffsets };

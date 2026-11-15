@@ -1,8 +1,9 @@
 /**
  * Standalone Offline Markdown Parser
- * Extracts code fences, validates filenames via regex, supports LaTeX blocks, and injects bottom clearance.
+ * Chunks large documents for content-visibility performance, extracts code fences, and supports LaTeX.
  */
 const MarkdownParser = (() => {
+  const CHUNK_BLOCK_LIMIT = 20;
   const FILENAME_VALIDATOR = /^([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]{1,8}|Dockerfile|Makefile|Vagrantfile|docker-compose\.ya?ml)$/i;
   const HEADING_FILENAME_EXTRACTOR = /(?:(?:file(?:name)?|path):\s*)?`?([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]{1,8}|Dockerfile|Makefile|Vagrantfile)`?/i;
 
@@ -61,8 +62,12 @@ const MarkdownParser = (() => {
     const lines = markdown.split(/\r?\n/);
     const headings = [];
     const codeBlocks = [];
+    const out = [];
 
-    let html = '';
+    let chunkParts = [];
+    let chunkBlocks = 0;
+    let chunkEstHeight = 0;
+
     let inCodeBlock = false;
     let codeBuffer = [];
     let codeMeta = '';
@@ -73,9 +78,31 @@ const MarkdownParser = (() => {
     let lastHeading = '';
     let lastHeadingId = '';
 
+    function flushChunk() {
+      if (isNested || !chunkParts.length) return;
+      const est = Math.max(120, Math.round(chunkEstHeight));
+      out.push(`<section class="md-chunk" style="contain-intrinsic-size: auto ${est}px;">\n`, chunkParts.join(''), '</section>\n');
+      chunkParts = [];
+      chunkBlocks = 0;
+      chunkEstHeight = 0;
+    }
+
+    function pushBlock(htmlStr, estPx = 42) {
+      if (isNested) {
+        out.push(htmlStr);
+        return;
+      }
+      chunkParts.push(htmlStr);
+      chunkBlocks++;
+      chunkEstHeight += estPx;
+      if (chunkBlocks >= CHUNK_BLOCK_LIMIT && !inList && !inTable) {
+        flushChunk();
+      }
+    }
+
     function flushList() {
       if (inList) {
-        html += `</${listType}>\n`;
+        pushBlock(`</${listType}>\n`, 12);
         inList = false;
       }
     }
@@ -83,20 +110,19 @@ const MarkdownParser = (() => {
     function flushTable() {
       if (!inTable) return;
       if (tableBuffer.length >= 2) {
-        html += '<table><thead>\n<tr>';
-        const headers = splitCells(tableBuffer[0]);
-        headers.forEach(h => { html += `<th>${parseInline(h)}</th>`; });
-        html += '</tr>\n</thead><tbody>\n';
-
+        const t = ['<table><thead>\n<tr>'];
+        splitCells(tableBuffer[0]).forEach(h => t.push(`<th>${parseInline(h)}</th>`));
+        t.push('</tr>\n</thead><tbody>\n');
         for (let i = 2; i < tableBuffer.length; i++) {
           const cells = splitCells(tableBuffer[i]);
           if (cells.length) {
-            html += '<tr>';
-            cells.forEach(c => { html += `<td>${parseInline(c)}</td>`; });
-            html += '</tr>\n';
+            t.push('<tr>');
+            cells.forEach(c => t.push(`<td>${parseInline(c)}</td>`));
+            t.push('</tr>\n');
           }
         }
-        html += '</tbody></table>\n';
+        t.push('</tbody></table>\n');
+        pushBlock(t.join(''), 44 + tableBuffer.length * 38);
       }
       tableBuffer = [];
       inTable = false;
@@ -133,7 +159,7 @@ const MarkdownParser = (() => {
           }
 
           if (lang.toLowerCase() === 'math' && typeof LatexEngine !== 'undefined') {
-            html += LatexEngine.renderDisplayBlock(rawCode, true);
+            pushBlock(LatexEngine.renderDisplayBlock(rawCode, true), 90);
             continue;
           }
 
@@ -160,25 +186,10 @@ const MarkdownParser = (() => {
             ? SyntaxHighlighter.highlight(rawCode, lang)
             : escapeHtml(rawCode);
 
-          html += `
-          <div class="code-card" id="codeBlock${blockIndex}" data-block-index="${blockIndex}">
-            <div class="code-header-bar">
-              <div class="code-meta-wrap">
-                <span class="code-seq">#${blockIndex + 1}</span>
-                <span class="code-name-label" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</span>
-              </div>
-              <button class="code-block-copy" data-block-target="${blockIndex}">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <span>Copy</span>
-              </button>
-            </div>
-            <div class="code-body-wrap">
-              <pre><code class="language-${escapeHtml(lang)}">${highlightedCode}</code></pre>
-            </div>
-          </div>\n`;
+          pushBlock(
+            `<div class="code-card" id="codeBlock${blockIndex}" data-block-index="${blockIndex}"><div class="code-header-bar"><div class="code-meta-wrap"><span class="code-seq">#${blockIndex + 1}</span><span class="code-name-label" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</span></div><button class="code-block-copy" data-block-target="${blockIndex}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><span>Copy</span></button></div><div class="code-body-wrap"><pre><code class="language-${escapeHtml(lang)}">${highlightedCode}</code></pre></div></div>\n`,
+            80 + codeBuffer.length * 22
+          );
         }
         continue;
       }
@@ -193,7 +204,7 @@ const MarkdownParser = (() => {
         if (displayMatch) {
           flushList();
           flushTable();
-          html += displayMatch.html;
+          pushBlock(displayMatch.html, 64 + (displayMatch.endIndex - i) * 26);
           i = displayMatch.endIndex;
           continue;
         }
@@ -217,13 +228,13 @@ const MarkdownParser = (() => {
         lastHeading = text;
         lastHeadingId = slug;
         if (!isNested) headings.push({ level, text, id: slug });
-        html += `<h${level} id="${slug}">${parseInline(text)}</h${level}>\n`;
+        pushBlock(`<h${level} id="${slug}">${parseInline(text)}</h${level}>\n`, 64);
         continue;
       }
 
       if (/^(\*\*\*|---|___)$/.test(line.trim())) {
         flushList();
-        html += '<hr>\n';
+        pushBlock('<hr>\n', 34);
         continue;
       }
 
@@ -235,7 +246,7 @@ const MarkdownParser = (() => {
           i++;
         }
         i--;
-        html += `<blockquote>${parse(quoteLines.join('\n'), true).html}</blockquote>\n`;
+        pushBlock(`<blockquote>${parse(quoteLines.join('\n'), true).html}</blockquote>\n`, 48 + quoteLines.length * 26);
         continue;
       }
 
@@ -245,9 +256,9 @@ const MarkdownParser = (() => {
           flushList();
           inList = true;
           listType = 'ul';
-          html += '<ul>\n';
+          pushBlock('<ul>\n', 8);
         }
-        html += `<li>${parseInline(ulMatch[2])}</li>\n`;
+        pushBlock(`<li>${parseInline(ulMatch[2])}</li>\n`, 28);
         continue;
       }
 
@@ -257,9 +268,9 @@ const MarkdownParser = (() => {
           flushList();
           inList = true;
           listType = 'ol';
-          html += '<ol>\n';
+          pushBlock('<ol>\n', 8);
         }
-        html += `<li>${parseInline(olMatch[2])}</li>\n`;
+        pushBlock(`<li>${parseInline(olMatch[2])}</li>\n`, 28);
         continue;
       }
 
@@ -269,17 +280,19 @@ const MarkdownParser = (() => {
       }
 
       flushList();
-      html += `<p>${parseInline(line)}</p>\n`;
+      pushBlock(`<p>${parseInline(line)}</p>\n`, 36 + Math.ceil(line.length / 80) * 24);
     }
 
     flushList();
     flushTable();
+    flushChunk();
+
     if (!isNested) {
-      html += '<div class="doc-end-spacer" aria-hidden="true"></div>\n';
+      out.push('<div class="doc-end-spacer" aria-hidden="true"></div>\n');
     }
 
-    return { html, headings, codeBlocks };
+    return { html: out.join(''), headings, codeBlocks };
   }
 
   return { parse, extractFilenameFromHeading, FILENAME_VALIDATOR };
-})();
+})(); 

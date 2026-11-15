@@ -69,7 +69,13 @@
     color: var(--text-main) !important;
   }
 
-  .markdown-viewer > :first-child {
+  .md-chunk {
+    content-visibility: visible !important;
+    contain: none !important;
+  }
+
+  .markdown-viewer > :first-child,
+  .markdown-viewer > .md-chunk:first-child > :first-child {
     margin-top: 0 !important;
   }
 

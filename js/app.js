@@ -1,6 +1,6 @@
 /**
  * Master Application Coordinator
- * Manages document rendering, LaTeX typesetting, modal dialogs, and external shortcut triggers.
+ * Manages document rendering, delegated copy handling, LaTeX flushing for print, and modals.
  */
 const App = (() => {
   const STORAGE_KEY = 'mdviewer_document';
@@ -27,6 +27,7 @@ const App = (() => {
   const statReadTime = document.getElementById('statReadTime');
   const statCodeCount = document.getElementById('statCodeCount');
 
+  let activeCodeBlocks = [];
   let toastTimer;
   let sidebarAnimTimer;
 
@@ -54,8 +55,24 @@ const App = (() => {
     }, 2200);
   }
 
+  function countWordsFast(text) {
+    let words = 0;
+    let inWord = false;
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i);
+      const isSpace = code === 32 || code === 10 || code === 13 || code === 9;
+      if (isSpace) {
+        inWord = false;
+      } else if (!inWord) {
+        inWord = true;
+        words++;
+      }
+    }
+    return words;
+  }
+
   function updateDocumentStats(text, codeBlockCount) {
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const words = countWordsFast(text);
     const readMinutes = Math.max(1, Math.ceil(words / 200));
     statWords.textContent = `${words.toLocaleString()} words`;
     statReadTime.textContent = `${readMinutes} min read`;
@@ -64,25 +81,12 @@ const App = (() => {
 
   function renderMarkdownContent(source, persist = true) {
     const { html, headings, codeBlocks } = MarkdownParser.parse(source);
+    activeCodeBlocks = codeBlocks;
     viewer.innerHTML = html;
 
     if (persist) {
       saveToStorage(source);
     }
-
-    viewer.querySelectorAll('.code-block-copy').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const targetIndex = parseInt(btn.dataset.blockTarget, 10);
-        const block = codeBlocks[targetIndex];
-        if (block) {
-          await navigator.clipboard.writeText(block.code);
-          const original = btn.innerHTML;
-          btn.innerHTML = '<span>✓ Copied</span>';
-          showToast(`Copied: ${block.name}`);
-          setTimeout(() => { btn.innerHTML = original; }, 1800);
-        }
-      });
-    });
 
     TocController.render(headings);
     CodeNavigator.init(codeBlocks);
@@ -92,6 +96,26 @@ const App = (() => {
       LatexEngine.typeset([viewer, tocContainer]);
     }
   }
+
+  viewer.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.code-block-copy');
+    if (!btn) return;
+    const targetIndex = parseInt(btn.dataset.blockTarget, 10);
+    const block = activeCodeBlocks[targetIndex];
+    if (!block) return;
+
+    try {
+      await navigator.clipboard.writeText(block.code);
+    } catch {}
+
+    const labelEl = btn.querySelector('span');
+    if (labelEl) {
+      const original = labelEl.textContent;
+      labelEl.textContent = '✓ Copied';
+      showToast(`Copied: ${block.name}`);
+      setTimeout(() => { labelEl.textContent = original; }, 1800);
+    }
+  });
 
   function openDialog() {
     pasteModal.classList.add('open');
@@ -167,16 +191,26 @@ const App = (() => {
   });
 
   if (printBtn) {
-    printBtn.addEventListener('click', () => {
+    printBtn.addEventListener('click', async () => {
+      if (window.LatexRuntime?.hasPendingMath?.()) {
+        showToast('Preparing equations for print...');
+        await window.LatexRuntime.flushAll();
+      }
       window.print();
     });
   }
 
+  window.addEventListener('beforeprint', () => {
+    window.LatexRuntime?.flushSync?.();
+  });
+
   applyEditorBtn.addEventListener('click', () => {
     const content = markdownInput.value;
-    renderMarkdownContent(content, true);
     closeDialog();
-    showToast('Document rendered and saved');
+    requestAnimationFrame(() => {
+      renderMarkdownContent(content, true);
+      showToast('Document rendered and saved');
+    });
   });
 
   clearEditorBtn.addEventListener('click', () => {

@@ -61,17 +61,8 @@ const SyntaxHighlighter = (() => {
   function highlight(code, lang) {
     const language = normalizeLang(lang);
     if (!code) return '';
-
-    // Specialized JSON Highlighter
-    if (language === 'json') {
-      return highlightJson(code);
-    }
-
-    // Specialized HTML/XML Highlighter
-    if (language === 'html') {
-      return highlightHtml(code);
-    }
-
+    if (language === 'json') return highlightJson(code);
+    if (language === 'html') return highlightHtml(code);
     return highlightCode(code, language);
   }
 
@@ -79,23 +70,18 @@ const SyntaxHighlighter = (() => {
     const jsonRegex = /("(?:\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g;
     return escapeHtml(code).replace(jsonRegex, (match, stringVal, isKey, boolVal) => {
       if (stringVal) {
-        if (isKey) {
-          return `<span class="token-property">${stringVal}</span>${isKey}`;
-        }
+        if (isKey) return `<span class="token-property">${stringVal}</span>${isKey}`;
         return `<span class="token-string">${stringVal}</span>`;
       }
-      if (boolVal) {
-        return `<span class="token-boolean">${boolVal}</span>`;
-      }
+      if (boolVal) return `<span class="token-boolean">${boolVal}</span>`;
       return `<span class="token-number">${match}</span>`;
     });
   }
 
   function highlightHtml(code) {
     const escaped = escapeHtml(code);
-    // Tags and attributes
     return escaped.replace(/(&lt;\/?)([a-zA-Z0-9\-]+)((?:\s+[a-zA-Z0-9\-:]+(?:="[^"]*"|='[^']*'|=[^\s&gt;]+)?)*\s*)(\/?&gt;)/g, (m, open, tag, attrs, close) => {
-      let formattedAttrs = attrs.replace(/([a-zA-Z0-9\-:]+)(=)("[^"]*"|'[^']*'|[^\s&gt;]+)/g, (am, aname, eq, aval) => {
+      const formattedAttrs = attrs.replace(/([a-zA-Z0-9\-:]+)(=)("[^"]*"|'[^']*'|[^\s&gt;]+)/g, (am, aname, eq, aval) => {
         return `<span class="token-attr">${aname}</span>${eq}<span class="token-string">${aval}</span>`;
       });
       return `${open}<span class="token-tag">${tag}</span>${formattedAttrs}${close}`;
@@ -103,64 +89,56 @@ const SyntaxHighlighter = (() => {
   }
 
   function highlightCode(code, language) {
-    // Universal Lexer Pattern
-    // 1: Comments (//, /* */, #, --)
-    // 2: Strings ("...", '...', `...`)
-    // 3: Numbers
-    // 4: Words / Identifiers
-    // 5: Operators & Punctuation
     const masterRegex = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*|--[^\n]*)|(`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b|0x[0-9a-fA-F]+\b)|([a-zA-Z_$][a-zA-Z0-9_$]*)|([+\-*/%=<>!&|^~?:;.,()[\]{}]+)/g;
 
-    let result = '';
+    const parts = [];
     let lastIndex = 0;
     let match;
 
     const keywords = KEYWORDS[language] || KEYWORDS.js;
 
     while ((match = masterRegex.exec(code)) !== null) {
-      // Append unhandled text between tokens
       if (match.index > lastIndex) {
-        result += escapeHtml(code.slice(lastIndex, match.index));
+        parts.push(escapeHtml(code.slice(lastIndex, match.index)));
       }
 
       const [full, comment, stringVal, numberVal, wordVal, opVal] = match;
 
       if (comment) {
-        result += `<span class="token-comment">${escapeHtml(comment)}</span>`;
+        parts.push(`<span class="token-comment">${escapeHtml(comment)}</span>`);
       } else if (stringVal) {
-        result += `<span class="token-string">${escapeHtml(stringVal)}</span>`;
+        parts.push(`<span class="token-string">${escapeHtml(stringVal)}</span>`);
       } else if (numberVal) {
-        result += `<span class="token-number">${numberVal}</span>`;
+        parts.push(`<span class="token-number">${numberVal}</span>`);
       } else if (wordVal) {
         const lower = wordVal.toLowerCase();
         const upper = wordVal.toUpperCase();
 
         if (BOOLEANS.has(wordVal)) {
-          result += `<span class="token-boolean">${wordVal}</span>`;
+          parts.push(`<span class="token-boolean">${wordVal}</span>`);
         } else if (keywords.has(language === 'sql' ? upper : wordVal) || keywords.has(lower)) {
-          result += `<span class="token-keyword">${wordVal}</span>`;
+          parts.push(`<span class="token-keyword">${wordVal}</span>`);
         } else {
-          // Check if followed by open parenthesis for function invocation/definition
           const nextCharIndex = match.index + full.length;
           const lookahead = code.slice(nextCharIndex, nextCharIndex + 10).trim();
           if (lookahead.startsWith('(')) {
-            result += `<span class="token-function">${wordVal}</span>`;
+            parts.push(`<span class="token-function">${wordVal}</span>`);
           } else {
-            result += `<span class="token-variable">${wordVal}</span>`;
+            parts.push(`<span class="token-variable">${wordVal}</span>`);
           }
         }
       } else if (opVal) {
-        result += `<span class="token-operator">${escapeHtml(opVal)}</span>`;
+        parts.push(`<span class="token-operator">${escapeHtml(opVal)}</span>`);
       }
 
       lastIndex = masterRegex.lastIndex;
     }
 
     if (lastIndex < code.length) {
-      result += escapeHtml(code.slice(lastIndex));
+      parts.push(escapeHtml(code.slice(lastIndex)));
     }
 
-    return result;
+    return parts.join('');
   }
 
   return { highlight };

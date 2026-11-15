@@ -103,6 +103,7 @@
   word-break: break-word;
   border-left: 2px solid transparent;
   user-select: none;
+  contain: layout style;
   transition: background-color 90ms ease, color 90ms ease;
 }
 
