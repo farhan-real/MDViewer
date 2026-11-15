@@ -8,8 +8,7 @@ window.MathJax = {
     inlineMath: [['$', '$'], ['\\(', '\\)']],
     displayMath: [['$$', '$$'], ['\\[', '\\]']],
     processEscapes: true,
-    processEnvironments: true,
-    packages: { '[+]': ['physics'] }
+    processEnvironments: true
   },
   options: {
     ignoreHtmlClass: 'tex2jax_ignore',
@@ -31,12 +30,17 @@ window.MathJax = {
 };
 
 const LatexEngine = (() => {
-  const MATH_ENVS = new Set([
+  const DISPLAY_ENVS = new Set([
     'equation', 'equation*', 'align', 'align*', 'alignat', 'alignat*',
-    'flalign', 'flalign*', 'gather', 'gather*', 'multline', 'multline*',
-    'eqnarray', 'eqnarray*', 'cases', 'dcases', 'rcases', 'matrix',
-    'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix', 'smallmatrix',
-    'split', 'array', 'subequations', 'CD'
+    'xalignat', 'xalignat*', 'xxalignat', 'flalign', 'flalign*',
+    'gather', 'gather*', 'multline', 'multline*', 'eqnarray', 'eqnarray*',
+    'numcases', 'subnumcases', 'empheq', 'prooftree', 'subequations', 'CD'
+  ]);
+
+  const INNER_MATH_ENVS = new Set([
+    'aligned', 'alignedat', 'gathered', 'split', 'cases', 'dcases', 'rcases',
+    'matrix', 'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix',
+    'smallmatrix', 'array'
   ]);
 
   let isReady = false;
@@ -161,11 +165,17 @@ const LatexEngine = (() => {
     return output;
   }
 
-  function renderDisplayBlock(rawContent) {
+  function renderDisplayBlock(rawContent, forceWrap = false) {
     const trimmed = rawContent.trim();
-    const isDelimited = trimmed.startsWith('$$') || trimmed.startsWith('\\[') || /^\\begin\{/.test(trimmed);
+    const isDelimited = !forceWrap && (trimmed.startsWith('$$') || trimmed.startsWith('\\[') || /^\\begin\{/.test(trimmed));
     const expr = isDelimited ? trimmed : `$$\n${trimmed}\n$$`;
     return `<div class="math-tex math-display">${escapeHtml(expr)}</div>\n`;
+  }
+
+  function normalizeClosingPunct(raw, delim) {
+    const escapedDelim = delim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`${escapedDelim}\\s*([.,;:!?]+)\\s*$`);
+    return raw.replace(re, `$1${delim}`);
   }
 
   function consumeDisplayBlock(lines, startIndex) {
@@ -173,13 +183,14 @@ const LatexEngine = (() => {
 
     if (trimmed.startsWith('$$')) {
       const closeIdx = trimmed.indexOf('$$', 2);
-      if (closeIdx !== -1 && closeIdx === trimmed.length - 2) {
-        return { html: renderDisplayBlock(trimmed), endIndex: startIndex };
+      if (closeIdx !== -1 && /^\$\$\s*[.,;:!?]*$/.test(trimmed.slice(closeIdx))) {
+        return { html: renderDisplayBlock(normalizeClosingPunct(trimmed, '$$')), endIndex: startIndex };
       }
       if (closeIdx === -1) {
         for (let j = startIndex + 1; j < lines.length; j++) {
           if (lines[j].includes('$$')) {
-            return { html: renderDisplayBlock(lines.slice(startIndex, j + 1).join('\n')), endIndex: j };
+            const raw = normalizeClosingPunct(lines.slice(startIndex, j + 1).join('\n'), '$$');
+            return { html: renderDisplayBlock(raw), endIndex: j };
           }
         }
       }
@@ -187,28 +198,32 @@ const LatexEngine = (() => {
 
     if (trimmed.startsWith('\\[')) {
       const closeIdx = trimmed.indexOf('\\]', 2);
-      if (closeIdx !== -1 && closeIdx === trimmed.length - 2) {
-        return { html: renderDisplayBlock(trimmed), endIndex: startIndex };
+      if (closeIdx !== -1 && /^\\\]\s*[.,;:!?]*$/.test(trimmed.slice(closeIdx))) {
+        return { html: renderDisplayBlock(normalizeClosingPunct(trimmed, '\\]')), endIndex: startIndex };
       }
       if (closeIdx === -1) {
         for (let j = startIndex + 1; j < lines.length; j++) {
           if (lines[j].includes('\\]')) {
-            return { html: renderDisplayBlock(lines.slice(startIndex, j + 1).join('\n')), endIndex: j };
+            const raw = normalizeClosingPunct(lines.slice(startIndex, j + 1).join('\n'), '\\]');
+            return { html: renderDisplayBlock(raw), endIndex: j };
           }
         }
       }
     }
 
     const envMatch = trimmed.match(/^\\begin\{([a-zA-Z*]+)\}/);
-    if (envMatch && MATH_ENVS.has(envMatch[1])) {
-      const endTag = `\\end{${envMatch[1]}}`;
+    const envName = envMatch ? envMatch[1] : '';
+    const isOuterEnv = DISPLAY_ENVS.has(envName);
+    const isInnerEnv = INNER_MATH_ENVS.has(envName);
+    if (isOuterEnv || isInnerEnv) {
+      const endTag = `\\end{${envName}}`;
       if (trimmed.endsWith(endTag)) {
-        return { html: renderDisplayBlock(trimmed), endIndex: startIndex };
+        return { html: renderDisplayBlock(trimmed, isInnerEnv), endIndex: startIndex };
       }
       if (!trimmed.includes(endTag)) {
         for (let j = startIndex + 1; j < lines.length; j++) {
           if (lines[j].includes(endTag)) {
-            return { html: renderDisplayBlock(lines.slice(startIndex, j + 1).join('\n')), endIndex: j };
+            return { html: renderDisplayBlock(lines.slice(startIndex, j + 1).join('\n'), isInnerEnv), endIndex: j };
           }
         }
       }
@@ -220,7 +235,7 @@ const LatexEngine = (() => {
   function splitTableRow(rowLine) {
     const inner = rowLine.trim().replace(/^\|/, '').replace(/\|$/, '');
     const dummyTokens = [];
-    let masked = inner.replace(/`([^`]+)`/g, (m) => {
+    const masked = inner.replace(/`([^`]+)`/g, (m) => {
       const idx = dummyTokens.length;
       dummyTokens.push(m);
       return `\uE000T${idx}\uE001`;

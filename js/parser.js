@@ -55,8 +55,8 @@ const MarkdownParser = (() => {
     return rowLine.split('|').map(s => s.trim()).filter(Boolean);
   }
 
-  function parse(markdown) {
-    if (!markdown) return { html: '<p class="empty-state">No content to preview.</p>', headings: [], codeBlocks: [] };
+  function parse(markdown, isNested = false) {
+    if (!markdown) return { html: isNested ? '' : '<p class="empty-state">No content to preview.</p>', headings: [], codeBlocks: [] };
 
     const lines = markdown.split(/\r?\n/);
     const headings = [];
@@ -133,7 +133,7 @@ const MarkdownParser = (() => {
           }
 
           if (lang.toLowerCase() === 'math' && typeof LatexEngine !== 'undefined') {
-            html += LatexEngine.renderDisplayBlock(rawCode);
+            html += LatexEngine.renderDisplayBlock(rawCode, true);
             continue;
           }
 
@@ -216,7 +216,7 @@ const MarkdownParser = (() => {
         const slug = slugify(text) || `heading-${headings.length}`;
         lastHeading = text;
         lastHeadingId = slug;
-        headings.push({ level, text, id: slug });
+        if (!isNested) headings.push({ level, text, id: slug });
         html += `<h${level} id="${slug}">${parseInline(text)}</h${level}>\n`;
         continue;
       }
@@ -229,8 +229,13 @@ const MarkdownParser = (() => {
 
       if (line.trim().startsWith('>')) {
         flushList();
-        const quoteContent = line.replace(/^>\s?/, '');
-        html += `<blockquote>${parseInline(quoteContent)}</blockquote>\n`;
+        const quoteLines = [];
+        while (i < lines.length && lines[i].trim().startsWith('>')) {
+          quoteLines.push(lines[i].replace(/^\s*>\s?/, ''));
+          i++;
+        }
+        i--;
+        html += `<blockquote>${parse(quoteLines.join('\n'), true).html}</blockquote>\n`;
         continue;
       }
 
@@ -269,7 +274,9 @@ const MarkdownParser = (() => {
 
     flushList();
     flushTable();
-    html += '<div class="doc-end-spacer" aria-hidden="true"></div>\n';
+    if (!isNested) {
+      html += '<div class="doc-end-spacer" aria-hidden="true"></div>\n';
+    }
 
     return { html, headings, codeBlocks };
   }

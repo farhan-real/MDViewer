@@ -84,13 +84,16 @@ services:
 \`\`\`
 
 ### Mathematical & $\\LaTeX$ Rendering ($\\hat{H}\\ket{\\psi} = E\\ket{\\psi}$)
-Inline formulas like $E = mc^2$ and \\(\\nabla \\cdot \\mathbf{E} = \\frac{\\rho}{\\varepsilon_0}\\) render alongside multi-line equations, physics notation, chemistry (\\(\\ce{2H2 + O2 -> 2H2O}\\)), and matrices:
+Inline formulas like $E = mc^2$, $12 \\div 3 = 4$, and \\(\\nabla \\cdot \\mathbf{E} = \\frac{\\rho}{\\varepsilon_0}\\) render alongside multi-line derivations, boxed answers, chemistry (\\(\\ce{2H2 + O2 -> 2H2O}\\)), and matrices:
 
-$$\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}$$
+> **Gaussian Integral:**
+> $$
+> \\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\boxed{\\sqrt{\\pi}}
+> $$
 
 \\begin{align}
 \\mathcal{L}(\\theta) &= -\\frac{1}{N} \\sum_{i=1}^{N} \\Big[ y_i \\log(\\hat{y}_i) + (1 - y_i)\\log(1 - \\hat{y}_i) \\Big] \\\\
-\\mathbf{A} &= \\begin{bmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{bmatrix}, \\quad \\mel{\\psi}{\\hat{H}}{\\phi} = \\cancel{0} + \\hbar\\omega
+\\mathbf{A} &= \\begin{bmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{bmatrix}, \\quad \\bra{\\psi}\\hat{H}\\ket{\\phi} = \\cancel{0} + \\hbar\\omega
 \\end{align}
 
 \`\`\`math
