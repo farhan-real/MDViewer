@@ -15,6 +15,7 @@ window.MathJax = {
     skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
   },
   svg: {
+    blacker: 0,
     fontCache: 'local'
   },
   startup: {

@@ -1,12 +1,19 @@
 /**
  * Theme Toggle Controller
- * Defaults to AMOLED dark theme and persists light/dark preference locally.
+ * Defaults to AMOLED dark theme, persists preference locally, and syncs print page margins.
  */
 const ThemeController = (() => {
   const STORAGE_KEY = 'mdviewer_theme';
   const toggleBtn = document.getElementById('themeToggleBtn');
   const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+
+  const PRINT_MARGIN_BOXES = [
+    '@top-left-corner', '@top-left', '@top-center', '@top-right', '@top-right-corner',
+    '@left-top', '@left-middle', '@left-bottom',
+    '@right-top', '@right-middle', '@right-bottom',
+    '@bottom-left-corner', '@bottom-left', '@bottom-center', '@bottom-right-corner'
+  ];
 
   let currentTheme = 'dark';
 
@@ -16,6 +23,40 @@ const ThemeController = (() => {
     } catch {
       return 'dark';
     }
+  }
+
+  function updatePrintPageStyle(isLight) {
+    let styleEl = document.getElementById('printPageThemeStyle');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'printPageThemeStyle';
+      document.head.appendChild(styleEl);
+    }
+
+    const bg = isLight ? '#ffffff' : '#000000';
+    const muted = isLight ? '#71717a' : '#a1a1aa';
+    const blankBoxes = PRINT_MARGIN_BOXES
+      .map((box) => `${box} { content: ""; background: ${bg}; }`)
+      .join('\n      ');
+
+    styleEl.textContent = `
+      @media print {
+        @page {
+          size: auto;
+          margin: 14mm;
+          ${blankBoxes}
+          @bottom-right {
+            content: counter(page) " / " counter(pages);
+            background: ${bg};
+            color: ${muted};
+            font-size: 8.5pt;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            vertical-align: bottom;
+            padding-bottom: 4mm;
+          }
+        }
+      }
+    `;
   }
 
   function applyTheme(theme, persist = false) {
@@ -36,6 +77,8 @@ const ThemeController = (() => {
       toggleBtn.setAttribute('aria-label', label);
       toggleBtn.setAttribute('title', label);
     }
+
+    updatePrintPageStyle(isLight);
 
     if (persist) {
       try {
