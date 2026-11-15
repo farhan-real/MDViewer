@@ -45,6 +45,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   background: var(--bg-modal-header);
 }
 
@@ -52,12 +53,14 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  min-width: 0;
 }
 
 .dialog-title-group h3 {
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-strong);
+  white-space: nowrap;
 }
 
 .dialog-tag {
@@ -67,12 +70,14 @@
   border: 1px solid var(--border-dim);
   color: var(--text-muted);
   border-radius: var(--radius-pill);
+  flex-shrink: 0;
 }
 
 .dialog-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .dialog-aux-btn {
@@ -85,6 +90,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
@@ -175,4 +181,27 @@
   padding: 0.1rem 0.3rem;
   font-size: 0.7rem;
   color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+  .modal-backdrop {
+    padding: 0.75rem;
+  }
+
+  .dialog-header,
+  .dialog-footer {
+    padding: 0.8rem 0.95rem;
+  }
+
+  .dialog-body {
+    padding: 0.85rem 0.95rem;
+  }
+
+  .dialog-body textarea {
+    height: 220px;
+  }
+
+  .dialog-title-group .dialog-tag {
+    display: none;
+  }
 }

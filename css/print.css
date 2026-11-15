@@ -136,6 +136,7 @@
 
   /* Tables: avoid row clipping and repeat headers across page breaks */
   .markdown-viewer table {
+    display: table !important;
     width: 100% !important;
     overflow: visible !important;
     margin: 1rem 0 !important;
