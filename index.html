@@ -6,12 +6,13 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <title>MDViewer - Professional Offline Markdown Viewer</title>
-  <link rel="stylesheet" href="css/base.css?v=2.4">
-  <link rel="stylesheet" href="css/sidebar.css?v=2.4">
-  <link rel="stylesheet" href="css/components.css?v=2.4">
-  <link rel="stylesheet" href="css/modals.css?v=2.4">
-  <link rel="stylesheet" href="css/overlays.css?v=2.4">
-  <link rel="stylesheet" href="css/syntax.css?v=2.4">
+  <link rel="stylesheet" href="css/themes.css?v=2.5">
+  <link rel="stylesheet" href="css/base.css?v=2.5">
+  <link rel="stylesheet" href="css/sidebar.css?v=2.5">
+  <link rel="stylesheet" href="css/components.css?v=2.5">
+  <link rel="stylesheet" href="css/modals.css?v=2.5">
+  <link rel="stylesheet" href="css/overlays.css?v=2.5">
+  <link rel="stylesheet" href="css/syntax.css?v=2.5">
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -41,18 +42,19 @@
 
     <div class="header-right">
       <button id="sampleBtn" class="btn ghost-btn" title="Load sample document">Load Sample</button>
+      <button id="themeToggleBtn" class="icon-btn" aria-label="Switch to light theme" title="Switch to light theme">
+        <svg class="theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
       <button id="shortcutsBtn" class="icon-btn" aria-label="Configure Keyboard Shortcuts" title="Configure Shortcuts">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-          <line x1="6" y1="8" x2="6.01" y2="8"></line>
-          <line x1="10" y1="8" x2="10.01" y2="8"></line>
-          <line x1="14" y1="8" x2="14.01" y2="8"></line>
-          <line x1="18" y1="8" x2="18.01" y2="8"></line>
-          <line x1="6" y1="12" x2="6.01" y2="12"></line>
-          <line x1="10" y1="12" x2="10.01" y2="12"></line>
-          <line x1="14" y1="12" x2="14.01" y2="12"></line>
-          <line x1="18" y1="12" x2="18.01" y2="12"></line>
-          <line x1="7" y1="16" x2="17" y2="16"></line>
+          <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"></path>
         </svg>
       </button>
       <button id="openEditorBtn" class="btn primary-btn" title="Paste or edit markdown">
@@ -222,15 +224,16 @@
   <div id="toastNotification" class="toast-notification" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="js/mathjax.js?v=2.4"></script>
+  <script src="js/theme.js?v=2.5"></script>
+  <script src="js/mathjax.js?v=2.5"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js"></script>
-  <script src="js/latex.js?v=2.4"></script>
-  <script src="js/sample.js?v=2.4"></script>
-  <script src="js/highlighter.js?v=2.4"></script>
-  <script src="js/parser.js?v=2.4"></script>
-  <script src="js/toc.js?v=2.4"></script>
-  <script src="js/codenav.js?v=2.4"></script>
-  <script src="js/shortcuts.js?v=2.4"></script>
-  <script src="js/app.js?v=2.4"></script>
+  <script src="js/latex.js?v=2.5"></script>
+  <script src="js/sample.js?v=2.5"></script>
+  <script src="js/highlighter.js?v=2.5"></script>
+  <script src="js/parser.js?v=2.5"></script>
+  <script src="js/toc.js?v=2.5"></script>
+  <script src="js/codenav.js?v=2.5"></script>
+  <script src="js/shortcuts.js?v=2.5"></script>
+  <script src="js/app.js?v=2.5"></script>
 </body>
 </html>

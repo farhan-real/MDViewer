@@ -3,7 +3,7 @@
 .markdown-viewer h2,
 .markdown-viewer h3,
 .markdown-viewer h4 {
-  color: #ffffff;
+  color: var(--text-strong);
   font-weight: 600;
   line-height: 1.35;
   margin-top: 2rem;
@@ -29,13 +29,13 @@
 
 .markdown-viewer p {
   margin-bottom: 1.15rem;
-  color: #d4d4d8;
+  color: var(--text-body);
 }
 
 .markdown-viewer a {
   color: var(--text-link);
   text-decoration: none;
-  border-bottom: 1px solid rgba(129, 140, 248, 0.35);
+  border-bottom: 1px solid var(--accent-border);
 }
 
 .markdown-viewer a:hover {
@@ -46,7 +46,7 @@
 .markdown-viewer ol {
   margin-bottom: 1.15rem;
   padding-left: 1.4rem;
-  color: #d4d4d8;
+  color: var(--text-body);
 }
 
 .markdown-viewer li {
@@ -62,7 +62,7 @@
 .markdown-viewer blockquote {
   border-left: 3.5px solid var(--accent-primary);
   padding: 0.6rem 1rem;
-  background: #09090c;
+  background: var(--bg-blockquote);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin: 1.25rem 0;
   color: var(--text-muted);
@@ -86,19 +86,19 @@
 }
 
 .markdown-viewer th {
-  background: #0c0c10;
+  background: var(--bg-table-head);
   font-weight: 600;
-  color: #f4f4f5;
+  color: var(--text-main);
 }
 
 .markdown-viewer tr:nth-child(even) {
-  background: #050507;
+  background: var(--bg-table-stripe);
 }
 
 .inline-code {
-  background: #14141d;
+  background: var(--bg-code-inline);
   border: 1.5px solid var(--border-mid);
-  color: #c7d2fe;
+  color: var(--text-code-inline);
   padding: 0.15rem 0.38rem;
   border-radius: 4px;
   font-family: var(--font-mono);
@@ -207,7 +207,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #181822;
+  background: var(--bg-elevated);
   border: 1.5px solid var(--border-mid);
   color: var(--text-muted);
   padding: 0.25rem 0.55rem;
@@ -219,8 +219,8 @@
 }
 
 .code-block-copy:hover {
-  background: #242432;
-  color: #ffffff;
+  background: var(--bg-card-hover);
+  color: var(--text-strong);
   border-color: var(--text-muted);
 }
 
@@ -230,7 +230,7 @@
   font-family: var(--font-mono);
   font-size: 0.85rem;
   line-height: 1.58;
-  color: #e4e4e7;
+  color: var(--text-code);
 }
 
 .code-body-wrap pre {

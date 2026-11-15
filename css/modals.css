@@ -2,7 +2,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--backdrop-modal);
   backdrop-filter: blur(4px);
   z-index: 50;
   display: flex;
@@ -22,12 +22,12 @@
 .dialog-card {
   width: 100%;
   max-width: 660px;
-  background: #09090c;
+  background: var(--bg-modal);
   border: 1.5px solid var(--border-mid);
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.95);
+  box-shadow: var(--shadow-modal);
   transform: scale(0.96) translateY(6px);
   transition: transform var(--transition-smooth);
   overflow: hidden;
@@ -43,7 +43,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #0d0d12;
+  background: var(--bg-modal-header);
 }
 
 .dialog-title-group {
@@ -55,13 +55,13 @@
 .dialog-title-group h3 {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-strong);
 }
 
 .dialog-tag {
   font-size: 0.65rem;
   padding: 0.1rem 0.4rem;
-  background: #181820;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-dim);
   color: var(--text-muted);
   border-radius: var(--radius-pill);
@@ -88,9 +88,9 @@
 }
 
 .dialog-aux-btn:hover {
-  color: #ffffff;
+  color: var(--text-strong);
   border-color: var(--border-mid);
-  background: #14141a;
+  background: var(--bg-subtle);
 }
 
 .dialog-close-btn {
@@ -104,22 +104,22 @@
 }
 
 .dialog-close-btn:hover {
-  color: #ffffff;
+  color: var(--text-strong);
 }
 
 .dialog-body {
   padding: 1rem 1.25rem;
-  background: #040406;
+  background: var(--bg-modal-body);
 }
 
 .dialog-body textarea {
   width: 100%;
   height: 310px;
-  background: #08080b;
+  background: var(--bg-textarea);
   border: 1.5px solid var(--border-dim);
   border-radius: var(--radius-md);
   padding: 0.85rem 1rem;
-  color: #f4f4f5;
+  color: var(--text-main);
   font-family: var(--font-mono);
   font-size: 0.86rem;
   line-height: 1.55;
@@ -138,7 +138,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #0d0d12;
+  background: var(--bg-modal-header);
 }
 
 .dialog-footer-left,
@@ -167,7 +167,7 @@
 }
 
 .dialog-hint kbd {
-  background: #14141a;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-mid);
   border-radius: 3px;
   padding: 0.1rem 0.3rem;
@@ -182,7 +182,7 @@
 
 .shortcuts-dialog-body {
   padding: 1.1rem 1.25rem;
-  background: #060608;
+  background: var(--bg-modal-body);
 }
 
 .shortcuts-instructions {
@@ -212,7 +212,7 @@
 .shortcut-label {
   font-size: 0.84rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-strong);
 }
 
 .shortcut-desc {
@@ -225,7 +225,7 @@
   width: auto;
   height: 30px;
   padding: 0 0.65rem;
-  background: #14141b;
+  background: var(--bg-elevated);
   border: 1.5px solid var(--border-mid);
   color: var(--accent-primary);
   border-radius: var(--radius-sm);
@@ -238,12 +238,12 @@
 
 .shortcut-key-btn:hover {
   border-color: var(--accent-primary);
-  background: #1a1a24;
+  background: var(--bg-card-hover);
 }
 
 .shortcut-key-btn.recording {
   border-color: var(--accent-primary);
-  color: #ffffff;
+  color: var(--text-strong);
   background: var(--accent-surface);
   outline: 1.5px solid var(--accent-primary);
 }

@@ -10,6 +10,7 @@
   border: 1.5px solid var(--border-mid);
   border-radius: var(--radius-pill);
   padding: 0.32rem 0.65rem;
+  box-shadow: var(--shadow-floating);
   z-index: 40;
   max-width: calc(100vw - 1.5rem);
   box-sizing: border-box;
@@ -80,7 +81,7 @@
 }
 
 .icon-nav-btn {
-  background: #14141a;
+  background: var(--bg-elevated);
   border: 1.5px solid var(--border-mid);
   color: var(--text-main);
   border-radius: var(--radius-pill);
@@ -95,7 +96,7 @@
 }
 
 .icon-nav-btn:hover:not(:disabled) {
-  background: #202028;
+  background: var(--bg-card-hover);
   border-color: var(--text-muted);
 }
 
@@ -130,9 +131,10 @@
   top: 1.25rem;
   left: 50%;
   transform: translateX(-50%) translateY(-20px);
-  background: #111116;
-  color: #ffffff;
+  background: var(--bg-floating);
+  color: var(--text-strong);
   border: 1.5px solid var(--border-mid);
+  box-shadow: var(--shadow-floating);
   padding: 0.45rem 0.95rem;
   border-radius: var(--radius-pill);
   font-size: 0.8rem;
@@ -157,7 +159,7 @@
     bottom: 0;
     margin-left: 0;
     transform: translateX(-100%);
-    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.9);
+    box-shadow: var(--shadow-drawer);
   }
 
   .toc-sidebar.open {

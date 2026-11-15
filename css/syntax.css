@@ -1,10 +1,10 @@
-/* AMOLED Dark Syntax Highlighting */
+/* Dark & Light Theme Syntax Highlighting */
 .code-body-wrap code {
-  color: #d4d4d8;
+  color: var(--text-code);
   font-family: var(--font-mono);
 }
 
-/* Syntax Tokens */
+/* Dark Theme Tokens (Default) */
 .token-keyword {
   color: #818cf8;
   font-weight: 600;
@@ -65,7 +65,67 @@
   color: #e4e4e7;
 }
 
-/* Subtly dim non-code tokens on hover for deep focus */
 .code-card:hover .token-comment {
   color: #71717a;
+}
+
+/* Light Theme Tokens */
+body.light-theme .token-keyword {
+  color: #4f46e5;
+}
+
+body.light-theme .token-builtin {
+  color: #7c3aed;
+}
+
+body.light-theme .token-string {
+  color: #059669;
+}
+
+body.light-theme .token-comment {
+  color: #94a3b8;
+}
+
+body.light-theme .token-number {
+  color: #d97706;
+}
+
+body.light-theme .token-boolean {
+  color: #db2777;
+}
+
+body.light-theme .token-function {
+  color: #2563eb;
+}
+
+body.light-theme .token-property {
+  color: #4338ca;
+}
+
+body.light-theme .token-operator {
+  color: #475569;
+}
+
+body.light-theme .token-punctuation {
+  color: #64748b;
+}
+
+body.light-theme .token-tag {
+  color: #dc2626;
+}
+
+body.light-theme .token-attr {
+  color: #0284c7;
+}
+
+body.light-theme .token-regex {
+  color: #b45309;
+}
+
+body.light-theme .token-variable {
+  color: #1e293b;
+}
+
+body.light-theme .code-card:hover .token-comment {
+  color: #64748b;
 }
