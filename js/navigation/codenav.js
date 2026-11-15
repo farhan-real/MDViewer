@@ -77,10 +77,11 @@ const CodeNavigator = (() => {
       if (pendingJumpEl && correctionCount < 2) {
         const elRect = pendingJumpEl.getBoundingClientRect();
         const cRect = scrollContainer.getBoundingClientRect();
-        const offset = (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2);
-        if (Math.abs(offset) > 32) {
+        const maxTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
+        const targetY = Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2)));
+        if (Math.abs(targetY - scrollContainer.scrollTop) > 32) {
           correctionCount++;
-          scrollContainer.scrollTo({ top: Math.max(0, scrollContainer.scrollTop + offset), behavior: 'smooth' });
+          scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
           return;
         }
       }
@@ -150,7 +151,8 @@ const CodeNavigator = (() => {
     if (!scrollContainer || !el) return;
     const elRect = el.getBoundingClientRect();
     const cRect = scrollContainer.getBoundingClientRect();
-    const targetY = Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2));
+    const maxTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
+    const targetY = Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2)));
 
     if (Math.abs(targetY - scrollContainer.scrollTop) < 2) {
       finishProgrammaticScroll();
@@ -184,12 +186,6 @@ const CodeNavigator = (() => {
     if (targetIndex !== activeIndex) {
       activeIndex = targetIndex;
       updateUI();
-
-      const headingId = getHeadingIdForBlock(blocks[activeIndex]);
-      const toc = window.TocController || null;
-      if (toc && headingId) {
-        toc.setActive(headingId);
-      }
     }
   }
 
@@ -205,7 +201,7 @@ const CodeNavigator = (() => {
     const headingId = getHeadingIdForBlock(current);
     const toc = window.TocController || null;
     if (toc) {
-      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(1400);
+      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(2500);
       if (headingId) toc.setActive(headingId);
     }
 
@@ -228,7 +224,7 @@ const CodeNavigator = (() => {
         if (highlightedCard === el) highlightedCard = null;
       }, 750);
 
-      scrollReleaseTimer = setTimeout(finishProgrammaticScroll, 1400);
+      scrollReleaseTimer = setTimeout(finishProgrammaticScroll, 2500);
     }
   }
 
@@ -246,13 +242,15 @@ const CodeNavigator = (() => {
       }
     }
 
-    if (targetIndex !== -1 && targetIndex !== activeIndex) {
+    if (targetIndex !== -1) {
       isUserScrolling = false;
-      jumpTo(targetIndex, false);
+      if (targetIndex !== activeIndex) {
+        jumpTo(targetIndex, false);
+      }
       clearTimeout(scrollReleaseTimer);
       scrollReleaseTimer = setTimeout(() => {
         isUserScrolling = true;
-      }, 1400);
+      }, 2500);
     }
   }
 

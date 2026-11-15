@@ -62,6 +62,7 @@ const MarkdownParser = (() => {
     const lines = markdown.split(/\r?\n/);
     const headings = [];
     const codeBlocks = [];
+    const slugCounts = new Map();
     const out = [];
 
     let chunkParts = [];
@@ -224,7 +225,10 @@ const MarkdownParser = (() => {
         flushList();
         const level = headingMatch[1].length;
         const text = headingMatch[2].trim();
-        const slug = slugify(text) || `heading-${headings.length}`;
+        const baseSlug = slugify(text) || `heading-${headings.length}`;
+        const count = (slugCounts.get(baseSlug) || 0) + 1;
+        slugCounts.set(baseSlug, count);
+        const slug = count === 1 ? baseSlug : `${baseSlug}-${count}`;
         lastHeading = text;
         lastHeadingId = slug;
         if (!isNested) headings.push({ level, text, id: slug });
@@ -295,4 +299,4 @@ const MarkdownParser = (() => {
   }
 
   return { parse, extractFilenameFromHeading, FILENAME_VALIDATOR };
-})(); 
+})();

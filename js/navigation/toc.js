@@ -42,7 +42,7 @@ const TocController = (() => {
     return escapeHtml(rawText).replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
   }
 
-  function lockScrollspy(duration = 1400) {
+  function lockScrollspy(duration = 2500) {
     isProgrammaticScroll = true;
     clearTimeout(lockTimer);
     lockTimer = setTimeout(unlockScrollspy, duration);
@@ -81,11 +81,16 @@ const TocController = (() => {
     }, 120);
   }
 
-  function scrollToElementTop(target) {
-    if (!scrollContainer || !target) return;
+  function getClampedTargetTop(target) {
     const tRect = target.getBoundingClientRect();
     const cRect = scrollContainer.getBoundingClientRect();
-    const targetY = Math.max(0, scrollContainer.scrollTop + (tRect.top - cRect.top) - 20);
+    const maxTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
+    return Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (tRect.top - cRect.top) - 20));
+  }
+
+  function scrollToElementTop(target) {
+    if (!scrollContainer || !target) return;
+    const targetY = getClampedTargetTop(target);
 
     if (Math.abs(targetY - scrollContainer.scrollTop) < 2) {
       unlockScrollspy();
@@ -113,10 +118,10 @@ const TocController = (() => {
 
     scrollContainer.addEventListener('scrollend', () => {
       if (programmaticTarget && correctionCount < 2) {
-        const diff = (programmaticTarget.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top) - 20;
-        if (Math.abs(diff) > 28) {
+        const targetY = getClampedTargetTop(programmaticTarget);
+        if (Math.abs(targetY - scrollContainer.scrollTop) > 28) {
           correctionCount++;
-          scrollContainer.scrollTo({ top: Math.max(0, scrollContainer.scrollTop + diff), behavior: 'smooth' });
+          scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
           return;
         }
       }
@@ -153,7 +158,7 @@ const TocController = (() => {
     if (!target || !scrollContainer) return;
 
     window.DocCollapse?.revealElement(target);
-    lockScrollspy(1400);
+    lockScrollspy(2500);
     setActive(id);
     scrollToElementTop(target);
     history.replaceState(null, '', `#${id}`);
@@ -257,7 +262,7 @@ const TocController = (() => {
     });
 
     container.appendChild(fragment);
-    cachedHeadings = Array.from(document.querySelectorAll('.markdown-viewer h1, .markdown-viewer h2, .markdown-viewer h3, .markdown-viewer h4'));
+    cachedHeadings = Array.from(document.querySelectorAll('.markdown-viewer h1, .markdown-viewer h2, .markdown-viewer h3, .markdown-viewer h4, .markdown-viewer h5, .markdown-viewer h6'));
     updateTocVisibility();
     attachListeners();
     refreshOffsets();

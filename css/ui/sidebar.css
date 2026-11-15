@@ -191,6 +191,14 @@
   color: var(--text-muted);
 }
 
+.toc-level-5,
+.toc-level-6 {
+  padding-left: 2.55rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 .toc-code {
   font-family: var(--font-mono);
   font-size: 0.85em;
