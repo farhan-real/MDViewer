@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Supports independent hierarchical TOC collapsing and cached rAF binary-search scrollspy.
+ * Supports independent TOC collapsing, idle-deferred offset caching, and overshoot-free jumps.
  */
 const TocController = (() => {
   const CHEVRON_SVG = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"></polyline></svg>';
@@ -17,13 +17,13 @@ const TocController = (() => {
   let currentActiveId = null;
   let currentFilter = '';
   let isProgrammaticScroll = false;
-  let programmaticTarget = null;
-  let correctionCount = 0;
   let lockTimer = null;
   let listenersAttached = false;
   let rafScheduled = false;
   let offsetRefreshTimer = null;
+  let tocScrollTimer = null;
   let filterRaf = false;
+  let lastUserScrollTime = 0;
   let resizeObserver = null;
 
   function escapeHtml(str) {
@@ -42,7 +42,7 @@ const TocController = (() => {
     return escapeHtml(rawText).replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
   }
 
-  function lockScrollspy(duration = 2500) {
+  function lockScrollspy(duration = 1600) {
     isProgrammaticScroll = true;
     clearTimeout(lockTimer);
     lockTimer = setTimeout(unlockScrollspy, duration);
@@ -50,8 +50,6 @@ const TocController = (() => {
 
   function unlockScrollspy() {
     isProgrammaticScroll = false;
-    programmaticTarget = null;
-    correctionCount = 0;
     clearTimeout(lockTimer);
     refreshOffsets();
   }
@@ -74,11 +72,13 @@ const TocController = (() => {
   }
 
   function scheduleRefreshOffsets() {
-    if (offsetRefreshTimer) return;
+    clearTimeout(offsetRefreshTimer);
+    const elapsed = performance.now() - lastUserScrollTime;
+    const delay = elapsed < 180 ? 200 : 80;
     offsetRefreshTimer = setTimeout(() => {
       offsetRefreshTimer = null;
       refreshOffsets();
-    }, 120);
+    }, delay);
   }
 
   function getClampedTargetTop(target) {
@@ -90,16 +90,31 @@ const TocController = (() => {
 
   function scrollToElementTop(target) {
     if (!scrollContainer || !target) return;
-    const targetY = getClampedTargetTop(target);
+    const initialY = getClampedTargetTop(target);
+    const distance = Math.abs(initialY - scrollContainer.scrollTop);
 
-    if (Math.abs(targetY - scrollContainer.scrollTop) < 2) {
+    if (distance < 2) {
       unlockScrollspy();
       return;
     }
 
-    programmaticTarget = target;
-    correctionCount = 0;
-    scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
+    if (distance <= scrollContainer.clientHeight * 2.2) {
+      scrollContainer.scrollTo({ top: initialY, behavior: 'smooth' });
+    } else {
+      // Far jump across unrendered chunks: land cleanly first, align after chunk layout, then glide
+      scrollContainer.scrollTop = initialY;
+      requestAnimationFrame(() => {
+        const exactY = getClampedTargetTop(target);
+        const preY = exactY > 64 ? exactY - 64 : exactY;
+        scrollContainer.scrollTop = preY;
+        if (Math.abs(exactY - preY) >= 2) {
+          scrollContainer.scrollTo({ top: exactY, behavior: 'smooth' });
+        } else {
+          unlockScrollspy();
+        }
+      });
+    }
+
     if (window.scrollY !== 0) window.scrollTo(0, 0);
   }
 
@@ -108,7 +123,9 @@ const TocController = (() => {
     listenersAttached = true;
 
     scrollContainer.addEventListener('scroll', () => {
-      if (isProgrammaticScroll || rafScheduled) return;
+      if (isProgrammaticScroll) return;
+      lastUserScrollTime = performance.now();
+      if (rafScheduled) return;
       rafScheduled = true;
       requestAnimationFrame(() => {
         rafScheduled = false;
@@ -117,15 +134,7 @@ const TocController = (() => {
     }, { passive: true });
 
     scrollContainer.addEventListener('scrollend', () => {
-      if (programmaticTarget && correctionCount < 2) {
-        const targetY = getClampedTargetTop(programmaticTarget);
-        if (Math.abs(targetY - scrollContainer.scrollTop) > 28) {
-          correctionCount++;
-          scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
-          return;
-        }
-      }
-      unlockScrollspy();
+      if (isProgrammaticScroll) unlockScrollspy();
     }, { passive: true });
 
     document.addEventListener('mdviewer:typeset', scheduleRefreshOffsets);
@@ -158,8 +167,8 @@ const TocController = (() => {
     if (!target || !scrollContainer) return;
 
     window.DocCollapse?.revealElement(target);
-    lockScrollspy(2500);
-    setActive(id);
+    lockScrollspy(1600);
+    setActive(id, true);
     scrollToElementTop(target);
     history.replaceState(null, '', `#${id}`);
 
@@ -180,7 +189,6 @@ const TocController = (() => {
     tocNodes = [];
     tocIndexMap.clear();
     currentActiveId = null;
-    programmaticTarget = null;
     counter.textContent = `${headings.length} items`;
 
     if (!headings.length) {
@@ -194,9 +202,7 @@ const TocController = (() => {
     const stack = [];
 
     headings.forEach((h, index) => {
-      while (stack.length && stack[stack.length - 1].level >= h.level) {
-        stack.pop();
-      }
+      while (stack.length && stack[stack.length - 1].level >= h.level) stack.pop();
       const parentIndex = stack.length ? stack[stack.length - 1].index : -1;
       stack.push({ level: h.level, index });
 
@@ -268,7 +274,7 @@ const TocController = (() => {
     refreshOffsets();
   }
 
-  function setActive(id) {
+  function setActive(id, immediateScroll = false) {
     if (!container || !id || id === currentActiveId) return;
 
     const prevIdx = currentActiveId ? tocIndexMap.get(currentActiveId) : undefined;
@@ -283,7 +289,16 @@ const TocController = (() => {
       const node = tocNodes[nextIdx];
       node.rowEl.classList.add('active');
       if (!node.isHidden) {
-        node.rowEl.scrollIntoView({ block: 'nearest' });
+        clearTimeout(tocScrollTimer);
+        if (immediateScroll) {
+          node.rowEl.scrollIntoView({ block: 'nearest' });
+        } else {
+          tocScrollTimer = setTimeout(() => {
+            if (currentActiveId === id && !node.isHidden) {
+              node.rowEl.scrollIntoView({ block: 'nearest' });
+            }
+          }, 80);
+        }
       }
     }
   }
@@ -306,7 +321,7 @@ const TocController = (() => {
       }
     }
 
-    setActive(activeId);
+    setActive(activeId, false);
   }
 
   filterInput.addEventListener('input', (e) => {

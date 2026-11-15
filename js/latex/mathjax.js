@@ -1,6 +1,6 @@
 /**
  * MathJax v3 Configuration & Progressive Lazy Typeset Queue
- * Typesets visible chunks first and processes remaining equations in non-blocking batches.
+ * Typesets only near-viewport chunks in tiny 3-item batches so fast scrolling stays 200Hz smooth.
  */
 window.MathJax = {
   tex: {
@@ -38,7 +38,8 @@ window.MathJax = {
 };
 
 const LatexRuntime = (() => {
-  const BATCH_SIZE = 12;
+  const BATCH_SIZE = 3;
+  const LOOKAHEAD_PX = 550;
 
   let isReady = false;
   let generation = 0;
@@ -61,12 +62,19 @@ const LatexRuntime = (() => {
     return pending;
   }
 
-  async function typesetContainerBatched(container, gen) {
+  function isChunkNearViewport(chunk, scrollRoot) {
+    if (!scrollRoot || !chunk.isConnected) return true;
+    const cRect = chunk.getBoundingClientRect();
+    const rRect = scrollRoot.getBoundingClientRect();
+    return cRect.bottom >= (rRect.top - LOOKAHEAD_PX) && cRect.top <= (rRect.bottom + LOOKAHEAD_PX);
+  }
+
+  async function typesetContainerBatched(container, gen, forceVisible = false) {
     const nodes = getUntypesetNodes(container);
     if (!nodes.length) return;
 
     const isChunk = container.classList && container.classList.contains('md-chunk');
-    if (isChunk) container.style.contentVisibility = 'visible';
+    if (isChunk && forceVisible) container.style.contentVisibility = 'visible';
 
     try {
       for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
@@ -82,13 +90,14 @@ const LatexRuntime = (() => {
     } catch (err) {
       console.warn('MathJax typeset warning:', err);
     } finally {
-      if (isChunk) container.style.contentVisibility = '';
+      if (isChunk && forceVisible) container.style.contentVisibility = '';
     }
   }
 
   async function drainQueue(gen) {
     if (isDraining || !isReady) return;
     isDraining = true;
+    const scrollRoot = document.getElementById('viewerWorkspace');
 
     try {
       while (pendingChunks.size > 0 && gen === generation) {
@@ -96,8 +105,15 @@ const LatexRuntime = (() => {
         const chunk = iterator.next().value;
         pendingChunks.delete(chunk);
 
-        if (observer) observer.unobserve(chunk);
-        await typesetContainerBatched(chunk, gen);
+        // Skip intermediate chunks scrolled past during fast flings; IO re-queues if revisited
+        if (scrollRoot && !isChunkNearViewport(chunk, scrollRoot)) {
+          continue;
+        }
+
+        await typesetContainerBatched(chunk, gen, false);
+        if (chunk.dataset.mathDone && observer) {
+          observer.unobserve(chunk);
+        }
         await nextFrame();
       }
     } finally {
@@ -119,14 +135,14 @@ const LatexRuntime = (() => {
     }
 
     if (tocContainer) {
-      typesetContainerBatched(tocContainer, gen);
+      typesetContainerBatched(tocContainer, gen, false);
     }
 
     if (!viewer) return;
 
     const chunks = viewer.querySelectorAll('.md-chunk');
     if (!chunks.length) {
-      typesetContainerBatched(viewer, gen);
+      typesetContainerBatched(viewer, gen, false);
       return;
     }
 
@@ -149,17 +165,18 @@ const LatexRuntime = (() => {
           if (entry.isIntersecting && !entry.target.dataset.mathDone) {
             pendingChunks.add(entry.target);
             added = true;
+          } else if (!entry.isIntersecting) {
+            pendingChunks.delete(entry.target);
           }
         }
         if (added) drainQueue(gen);
-      }, { root: scrollRoot, rootMargin: '800px 0px' });
+      }, { root: scrollRoot, rootMargin: '450px 0px' });
 
       for (let i = 0; i < mathChunks.length; i++) {
         observer.observe(mathChunks[i]);
       }
     }
 
-    // Eagerly queue the first two math chunks so above-the-fold renders immediately
     pendingChunks.add(mathChunks[0]);
     if (mathChunks[1]) pendingChunks.add(mathChunks[1]);
     drainQueue(gen);
@@ -188,7 +205,7 @@ const LatexRuntime = (() => {
     for (let i = 0; i < chunks.length; i++) {
       if (gen !== generation) return;
       if (!chunks[i].dataset.mathDone && chunks[i].querySelector('.math-tex')) {
-        await typesetContainerBatched(chunks[i], gen);
+        await typesetContainerBatched(chunks[i], gen, true);
       }
     }
   }

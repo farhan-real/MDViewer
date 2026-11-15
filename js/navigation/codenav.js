@@ -1,6 +1,6 @@
 /**
  * Simple Code Copy Menu Controller
- * Uses cached code card references, throttled offset refreshes, and rAF binary search.
+ * Uses cached code card references, idle-deferred offset refreshes, and overshoot-free jumps.
  */
 const CodeNavigator = (() => {
   let blocks = [];
@@ -8,14 +8,13 @@ const CodeNavigator = (() => {
   let blockTops = [];
   let activeIndex = 0;
   let isUserScrolling = true;
-  let pendingJumpEl = null;
-  let correctionCount = 0;
   let scrollReleaseTimer;
   let highlightTimer;
   let offsetRefreshTimer = null;
   let highlightedCard = null;
   let listenersAttached = false;
   let rafScheduled = false;
+  let lastUserScrollTime = 0;
 
   const menu = document.getElementById('codeCopyMenu');
   const posBadge = document.getElementById('codeNavPosition');
@@ -45,16 +44,16 @@ const CodeNavigator = (() => {
   }
 
   function scheduleRefreshOffsets() {
-    if (offsetRefreshTimer) return;
+    clearTimeout(offsetRefreshTimer);
+    const elapsed = performance.now() - lastUserScrollTime;
+    const delay = elapsed < 180 ? 200 : 80;
     offsetRefreshTimer = setTimeout(() => {
       offsetRefreshTimer = null;
       refreshOffsets();
-    }, 120);
+    }, delay);
   }
 
   function finishProgrammaticScroll() {
-    pendingJumpEl = null;
-    correctionCount = 0;
     isUserScrolling = true;
     clearTimeout(scrollReleaseTimer);
     refreshOffsets();
@@ -65,7 +64,9 @@ const CodeNavigator = (() => {
     listenersAttached = true;
 
     scrollContainer.addEventListener('scroll', () => {
-      if (!isUserScrolling || rafScheduled) return;
+      if (!isUserScrolling) return;
+      lastUserScrollTime = performance.now();
+      if (rafScheduled) return;
       rafScheduled = true;
       requestAnimationFrame(() => {
         rafScheduled = false;
@@ -74,18 +75,7 @@ const CodeNavigator = (() => {
     }, { passive: true });
 
     scrollContainer.addEventListener('scrollend', () => {
-      if (pendingJumpEl && correctionCount < 2) {
-        const elRect = pendingJumpEl.getBoundingClientRect();
-        const cRect = scrollContainer.getBoundingClientRect();
-        const maxTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
-        const targetY = Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2)));
-        if (Math.abs(targetY - scrollContainer.scrollTop) > 32) {
-          correctionCount++;
-          scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
-          return;
-        }
-      }
-      finishProgrammaticScroll();
+      if (!isUserScrolling) finishProgrammaticScroll();
     }, { passive: true });
 
     document.addEventListener('mdviewer:typeset', scheduleRefreshOffsets);
@@ -96,8 +86,6 @@ const CodeNavigator = (() => {
     blocks = codeBlockData || [];
     activeIndex = 0;
     highlightedCard = null;
-    pendingJumpEl = null;
-    correctionCount = 0;
 
     if (!blocks.length) {
       menu.style.display = 'none';
@@ -147,21 +135,39 @@ const CodeNavigator = (() => {
     return null;
   }
 
-  function scrollToElementCenter(el) {
-    if (!scrollContainer || !el) return;
+  function getClampedCenterTop(el) {
     const elRect = el.getBoundingClientRect();
     const cRect = scrollContainer.getBoundingClientRect();
     const maxTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
-    const targetY = Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2)));
+    return Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2)));
+  }
 
-    if (Math.abs(targetY - scrollContainer.scrollTop) < 2) {
+  function scrollToElementCenter(el) {
+    if (!scrollContainer || !el) return;
+    const initialY = getClampedCenterTop(el);
+    const distance = Math.abs(initialY - scrollContainer.scrollTop);
+
+    if (distance < 2) {
       finishProgrammaticScroll();
       return;
     }
 
-    pendingJumpEl = el;
-    correctionCount = 0;
-    scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
+    if (distance <= scrollContainer.clientHeight * 2.2) {
+      scrollContainer.scrollTo({ top: initialY, behavior: 'smooth' });
+    } else {
+      scrollContainer.scrollTop = initialY;
+      requestAnimationFrame(() => {
+        const exactY = getClampedCenterTop(el);
+        const preY = exactY > 64 ? exactY - 64 : exactY;
+        scrollContainer.scrollTop = preY;
+        if (Math.abs(exactY - preY) >= 2) {
+          scrollContainer.scrollTo({ top: exactY, behavior: 'smooth' });
+        } else {
+          finishProgrammaticScroll();
+        }
+      });
+    }
+
     if (window.scrollY !== 0) window.scrollTo(0, 0);
   }
 
@@ -201,8 +207,8 @@ const CodeNavigator = (() => {
     const headingId = getHeadingIdForBlock(current);
     const toc = window.TocController || null;
     if (toc) {
-      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(2500);
-      if (headingId) toc.setActive(headingId);
+      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(1600);
+      if (headingId) toc.setActive(headingId, true);
     }
 
     if (el && scrollContainer) {
@@ -224,7 +230,7 @@ const CodeNavigator = (() => {
         if (highlightedCard === el) highlightedCard = null;
       }, 750);
 
-      scrollReleaseTimer = setTimeout(finishProgrammaticScroll, 2500);
+      scrollReleaseTimer = setTimeout(finishProgrammaticScroll, 1600);
     }
   }
 
@@ -244,13 +250,11 @@ const CodeNavigator = (() => {
 
     if (targetIndex !== -1) {
       isUserScrolling = false;
-      if (targetIndex !== activeIndex) {
-        jumpTo(targetIndex, false);
-      }
+      if (targetIndex !== activeIndex) jumpTo(targetIndex, false);
       clearTimeout(scrollReleaseTimer);
       scrollReleaseTimer = setTimeout(() => {
         isUserScrolling = true;
-      }, 2500);
+      }, 1600);
     }
   }
 

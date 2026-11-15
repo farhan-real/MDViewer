@@ -208,6 +208,7 @@ body.light-theme .theme-icon-sun {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  will-change: scroll-position;
   -webkit-overflow-scrolling: touch;
   padding: 2.25rem 2rem 4rem 2rem;
   display: block;
