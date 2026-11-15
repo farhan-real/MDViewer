@@ -79,16 +79,15 @@ const LatexRuntime = (() => {
     return cRect.bottom >= (rRect.top - LOOKAHEAD_PX) && cRect.top <= (rRect.bottom + LOOKAHEAD_PX);
   }
 
-  async function typesetContainerBatched(container, gen, forceVisible = false) {
+  async function typesetContainerBatched(container, gen, ignorePause = false) {
     const nodes = getUntypesetNodes(container);
     if (!nodes.length) return;
 
     const isChunk = container.classList && container.classList.contains('md-chunk');
-    if (isChunk && forceVisible) container.style.contentVisibility = 'visible';
 
     try {
       for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
-        if (gen !== generation || (isPaused && !forceVisible)) return;
+        if (gen !== generation || (isPaused && !ignorePause)) return;
         const slice = nodes.slice(i, i + BATCH_SIZE);
         await window.MathJax.typesetPromise(slice);
         if (i + BATCH_SIZE < nodes.length) {
@@ -101,8 +100,24 @@ const LatexRuntime = (() => {
       document.dispatchEvent(new CustomEvent('mdviewer:typeset'));
     } catch (err) {
       console.warn('MathJax typeset warning:', err);
-    } finally {
-      if (isChunk && forceVisible) container.style.contentVisibility = '';
+    }
+  }
+
+  async function ensureChunkReady(chunk) {
+    if (!isReady || !chunk || chunk.dataset.mathDone) return;
+    const gen = generation;
+    const nodes = getUntypesetNodes(chunk);
+    if (!nodes.length) return;
+
+    try {
+      await window.MathJax.typesetPromise(nodes);
+      if (gen === generation && !hasAnyHiddenUntypeset(chunk)) {
+        chunk.dataset.mathDone = '1';
+        if (observer) observer.unobserve(chunk);
+      }
+      document.dispatchEvent(new CustomEvent('mdviewer:typeset'));
+    } catch (err) {
+      console.warn('MathJax chunk prep warning:', err);
     }
   }
 
@@ -146,14 +161,14 @@ const LatexRuntime = (() => {
     }
 
     if (tocContainer) {
-      typesetContainerBatched(tocContainer, gen, false);
+      typesetContainerBatched(tocContainer, gen, true);
     }
 
     if (!viewer) return;
 
     const chunks = viewer.querySelectorAll('.md-chunk');
     if (!chunks.length) {
-      typesetContainerBatched(viewer, gen, false);
+      typesetContainerBatched(viewer, gen, true);
       return;
     }
 
@@ -255,9 +270,7 @@ const LatexRuntime = (() => {
       if (!chunk.dataset.mathDone) {
         const pending = getUntypesetNodes(chunk);
         if (pending.length) {
-          chunk.style.contentVisibility = 'visible';
           window.MathJax.typeset(pending);
-          chunk.style.contentVisibility = '';
         }
         if (!hasAnyHiddenUntypeset(chunk)) chunk.dataset.mathDone = '1';
       }
@@ -277,7 +290,7 @@ const LatexRuntime = (() => {
     }
   }
 
-  return { typeset, onReady, flushAll, flushSync, hasPendingMath, recheckVisible, setPaused };
+  return { typeset, onReady, flushAll, flushSync, hasPendingMath, recheckVisible, setPaused, ensureChunkReady };
 })();
 
 window.LatexRuntime = LatexRuntime;

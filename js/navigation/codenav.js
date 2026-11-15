@@ -1,6 +1,6 @@
 /**
  * Simple Code Copy Menu Controller
- * Uses cached code card references, idle-deferred offset refreshes, and jitter-free jumps.
+ * Uses cached code card references, offset caching, and clean directional smooth scrolling.
  */
 const CodeNavigator = (() => {
   let blocks = [];
@@ -9,7 +9,6 @@ const CodeNavigator = (() => {
   let activeIndex = 0;
   let isUserScrolling = true;
   let awaitingScrollEnd = false;
-  let expectedEndY = null;
   let activeJumpToken = 0;
   let scrollReleaseTimer;
   let highlightTimer;
@@ -60,7 +59,6 @@ const CodeNavigator = (() => {
     if (token !== undefined && token !== activeJumpToken) return;
     isUserScrolling = true;
     awaitingScrollEnd = false;
-    expectedEndY = null;
     clearTimeout(scrollReleaseTimer);
     window.LatexRuntime?.setPaused?.(false);
     refreshOffsets();
@@ -83,7 +81,6 @@ const CodeNavigator = (() => {
 
     scrollContainer.addEventListener('scrollend', () => {
       if (isUserScrolling || !awaitingScrollEnd) return;
-      if (expectedEndY !== null && Math.abs(scrollContainer.scrollTop - expectedEndY) > 10) return;
       finishProgrammaticScroll(activeJumpToken);
     }, { passive: true });
 
@@ -96,7 +93,6 @@ const CodeNavigator = (() => {
     activeIndex = 0;
     highlightedCard = null;
     awaitingScrollEnd = false;
-    expectedEndY = null;
 
     if (!blocks.length) {
       menu.style.display = 'none';
@@ -153,32 +149,6 @@ const CodeNavigator = (() => {
     return Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2)));
   }
 
-  function scrollToElementCenter(el, token) {
-    if (!scrollContainer || !el) return;
-
-    const targetChunk = el.closest('.md-chunk');
-    if (targetChunk) targetChunk.style.contentVisibility = 'visible';
-    const targetY = getClampedCenterTop(el);
-    if (targetChunk) targetChunk.style.contentVisibility = '';
-
-    const distance = Math.abs(targetY - scrollContainer.scrollTop);
-    if (distance < 2) {
-      finishProgrammaticScroll(token);
-      return;
-    }
-
-    if (distance <= scrollContainer.clientHeight * 2.2) {
-      expectedEndY = targetY;
-      awaitingScrollEnd = true;
-      scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
-    } else {
-      scrollContainer.scrollTop = targetY;
-      finishProgrammaticScroll(token);
-    }
-
-    if (window.scrollY !== 0) window.scrollTo(0, 0);
-  }
-
   function syncScrollPosition() {
     if (!blocks.length || !blockTops.length || !isUserScrolling || !scrollContainer) return;
 
@@ -203,7 +173,7 @@ const CodeNavigator = (() => {
     }
   }
 
-  function jumpTo(index, scroll = true) {
+  async function jumpTo(index, scroll = true) {
     if (index < 0 || index >= blocks.length) return;
     activeIndex = index;
     updateUI();
@@ -226,7 +196,6 @@ const CodeNavigator = (() => {
       const token = activeJumpToken;
       isUserScrolling = false;
       awaitingScrollEnd = false;
-      expectedEndY = null;
       clearTimeout(scrollReleaseTimer);
       clearTimeout(highlightTimer);
 
@@ -236,14 +205,28 @@ const CodeNavigator = (() => {
       el.classList.add('target-highlight');
       highlightedCard = el;
 
-      scrollToElementCenter(el, token);
-
       highlightTimer = setTimeout(() => {
         el.classList.remove('target-highlight');
         if (highlightedCard === el) highlightedCard = null;
       }, 750);
 
       scrollReleaseTimer = setTimeout(() => finishProgrammaticScroll(token), 1600);
+
+      const targetChunk = el.closest('.md-chunk');
+      if (targetChunk && window.LatexRuntime?.ensureChunkReady) {
+        await window.LatexRuntime.ensureChunkReady(targetChunk);
+        if (token !== activeJumpToken) return;
+      }
+
+      const targetY = getClampedCenterTop(el);
+      if (Math.abs(targetY - scrollContainer.scrollTop) < 2) {
+        finishProgrammaticScroll(token);
+        return;
+      }
+
+      awaitingScrollEnd = true;
+      scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
     }
   }
 

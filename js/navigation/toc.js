@@ -1,6 +1,6 @@
 /**
  * Table of Contents & Scrollspy Controller
- * Coordinates TOC tree rendering via TocTree, idle-deferred offset caching, and jitter-free jumps.
+ * Coordinates TOC tree rendering via TocTree, offset caching, and clean directional smooth scrolling.
  */
 const TocController = (() => {
   const container = document.getElementById('tocContainer');
@@ -15,7 +15,6 @@ const TocController = (() => {
   let currentActiveId = null;
   let isProgrammaticScroll = false;
   let awaitingScrollEnd = false;
-  let expectedEndY = null;
   let activeNavToken = 0;
   let lockTimer = null;
   let listenersAttached = false;
@@ -31,7 +30,6 @@ const TocController = (() => {
     const token = activeNavToken;
     isProgrammaticScroll = true;
     awaitingScrollEnd = false;
-    expectedEndY = null;
     window.LatexRuntime?.setPaused?.(true);
     clearTimeout(lockTimer);
     lockTimer = setTimeout(() => unlockScrollspy(token), duration);
@@ -42,7 +40,6 @@ const TocController = (() => {
     if (token !== undefined && token !== activeNavToken) return;
     isProgrammaticScroll = false;
     awaitingScrollEnd = false;
-    expectedEndY = null;
     clearTimeout(lockTimer);
     window.LatexRuntime?.setPaused?.(false);
     refreshOffsets();
@@ -82,32 +79,6 @@ const TocController = (() => {
     return Math.min(maxTop, Math.max(0, scrollContainer.scrollTop + (tRect.top - cRect.top) - 20));
   }
 
-  function scrollToElementTop(target, token) {
-    if (!scrollContainer || !target) return;
-
-    const targetChunk = target.closest('.md-chunk');
-    if (targetChunk) targetChunk.style.contentVisibility = 'visible';
-    const targetY = getClampedTargetTop(target);
-    if (targetChunk) targetChunk.style.contentVisibility = '';
-
-    const distance = Math.abs(targetY - scrollContainer.scrollTop);
-    if (distance < 2) {
-      unlockScrollspy(token);
-      return;
-    }
-
-    if (distance <= scrollContainer.clientHeight * 2.2) {
-      expectedEndY = targetY;
-      awaitingScrollEnd = true;
-      scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
-    } else {
-      scrollContainer.scrollTop = targetY;
-      unlockScrollspy(token);
-    }
-
-    if (window.scrollY !== 0) window.scrollTo(0, 0);
-  }
-
   function attachListeners() {
     if (listenersAttached || !scrollContainer) return;
     listenersAttached = true;
@@ -125,7 +96,6 @@ const TocController = (() => {
 
     scrollContainer.addEventListener('scrollend', () => {
       if (!isProgrammaticScroll || !awaitingScrollEnd) return;
-      if (expectedEndY !== null && Math.abs(scrollContainer.scrollTop - expectedEndY) > 10) return;
       unlockScrollspy(activeNavToken);
     }, { passive: true });
 
@@ -139,14 +109,13 @@ const TocController = (() => {
     }
   }
 
-  function navigateToHeading(id) {
+  async function navigateToHeading(id) {
     const target = document.getElementById(id);
     if (!target || !scrollContainer) return;
 
     window.DocCollapse?.revealElement(target);
     const token = lockScrollspy(1600);
     setActive(id, true);
-    scrollToElementTop(target, token);
     history.replaceState(null, '', `#${id}`);
 
     const nav = window.CodeNavigator || null;
@@ -158,6 +127,22 @@ const TocController = (() => {
       document.getElementById('tocSidebar')?.classList.remove('open');
       document.getElementById('sidebarBackdrop')?.classList.remove('active');
     }
+
+    const targetChunk = target.closest('.md-chunk');
+    if (targetChunk && window.LatexRuntime?.ensureChunkReady) {
+      await window.LatexRuntime.ensureChunkReady(targetChunk);
+      if (token !== activeNavToken) return;
+    }
+
+    const targetY = getClampedTargetTop(target);
+    if (Math.abs(targetY - scrollContainer.scrollTop) < 2) {
+      unlockScrollspy(token);
+      return;
+    }
+
+    awaitingScrollEnd = true;
+    scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
   }
 
   function render(headings, docKey = '') {
