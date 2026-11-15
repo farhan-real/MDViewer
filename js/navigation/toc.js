@@ -26,12 +26,13 @@ const TocController = (() => {
   let lastUserScrollTime = 0;
   let resizeObserver = null;
 
-  function lockScrollspy(duration = 1800) {
+  function lockScrollspy(duration = 1600) {
     activeNavToken++;
     const token = activeNavToken;
     isProgrammaticScroll = true;
     awaitingScrollEnd = false;
     expectedEndY = null;
+    window.LatexRuntime?.setPaused?.(true);
     clearTimeout(lockTimer);
     lockTimer = setTimeout(() => unlockScrollspy(token), duration);
     return token;
@@ -43,6 +44,7 @@ const TocController = (() => {
     awaitingScrollEnd = false;
     expectedEndY = null;
     clearTimeout(lockTimer);
+    window.LatexRuntime?.setPaused?.(false);
     refreshOffsets();
   }
 
@@ -82,35 +84,25 @@ const TocController = (() => {
 
   function scrollToElementTop(target, token) {
     if (!scrollContainer || !target) return;
-    const initialY = getClampedTargetTop(target);
-    const distance = Math.abs(initialY - scrollContainer.scrollTop);
 
+    const targetChunk = target.closest('.md-chunk');
+    if (targetChunk) targetChunk.style.contentVisibility = 'visible';
+    const targetY = getClampedTargetTop(target);
+    if (targetChunk) targetChunk.style.contentVisibility = '';
+
+    const distance = Math.abs(targetY - scrollContainer.scrollTop);
     if (distance < 2) {
       unlockScrollspy(token);
       return;
     }
 
     if (distance <= scrollContainer.clientHeight * 2.2) {
-      expectedEndY = initialY;
+      expectedEndY = targetY;
       awaitingScrollEnd = true;
-      scrollContainer.scrollTo({ top: initialY, behavior: 'smooth' });
+      scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
     } else {
-      scrollContainer.scrollTop = initialY;
-      requestAnimationFrame(() => {
-        if (token !== activeNavToken) return;
-        const exactY = getClampedTargetTop(target);
-        const preY = exactY > 40 ? exactY - 40 : exactY;
-        scrollContainer.scrollTop = preY;
-        if (Math.abs(exactY - preY) >= 2) {
-          expectedEndY = exactY;
-          requestAnimationFrame(() => {
-            if (token === activeNavToken) awaitingScrollEnd = true;
-          });
-          scrollContainer.scrollTo({ top: exactY, behavior: 'smooth' });
-        } else {
-          unlockScrollspy(token);
-        }
-      });
+      scrollContainer.scrollTop = targetY;
+      unlockScrollspy(token);
     }
 
     if (window.scrollY !== 0) window.scrollTo(0, 0);
@@ -152,7 +144,7 @@ const TocController = (() => {
     if (!target || !scrollContainer) return;
 
     window.DocCollapse?.revealElement(target);
-    const token = lockScrollspy(1800);
+    const token = lockScrollspy(1600);
     setActive(id, true);
     scrollToElementTop(target, token);
     history.replaceState(null, '', `#${id}`);

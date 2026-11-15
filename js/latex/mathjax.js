@@ -42,6 +42,7 @@ const LatexRuntime = (() => {
   const LOOKAHEAD_PX = 550;
 
   let isReady = false;
+  let isPaused = false;
   let generation = 0;
   let observer = null;
   let isDraining = false;
@@ -87,7 +88,7 @@ const LatexRuntime = (() => {
 
     try {
       for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
-        if (gen !== generation) return;
+        if (gen !== generation || (isPaused && !forceVisible)) return;
         const slice = nodes.slice(i, i + BATCH_SIZE);
         await window.MathJax.typesetPromise(slice);
         if (i + BATCH_SIZE < nodes.length) {
@@ -106,12 +107,12 @@ const LatexRuntime = (() => {
   }
 
   async function drainQueue(gen) {
-    if (isDraining || !isReady) return;
+    if (isDraining || !isReady || isPaused) return;
     isDraining = true;
     const scrollRoot = document.getElementById('viewerWorkspace');
 
     try {
-      while (pendingChunks.size > 0 && gen === generation) {
+      while (pendingChunks.size > 0 && gen === generation && !isPaused) {
         const iterator = pendingChunks.values();
         const chunk = iterator.next().value;
         pendingChunks.delete(chunk);
@@ -128,7 +129,7 @@ const LatexRuntime = (() => {
       }
     } finally {
       isDraining = false;
-      if (pendingChunks.size > 0 && gen === generation) {
+      if (pendingChunks.size > 0 && gen === generation && !isPaused) {
         drainQueue(gen);
       }
     }
@@ -179,7 +180,7 @@ const LatexRuntime = (() => {
             pendingChunks.delete(entry.target);
           }
         }
-        if (added) drainQueue(gen);
+        if (added && !isPaused) drainQueue(gen);
       }, { root: scrollRoot, rootMargin: '450px 0px' });
 
       for (let i = 0; i < mathChunks.length; i++) {
@@ -193,7 +194,7 @@ const LatexRuntime = (() => {
   }
 
   function recheckVisible() {
-    if (!isReady) return;
+    if (!isReady || isPaused) return;
     const viewer = activeTargets[0];
     const scrollRoot = document.getElementById('viewerWorkspace');
     if (!viewer || !scrollRoot) return;
@@ -208,6 +209,11 @@ const LatexRuntime = (() => {
       }
     }
     if (added) drainQueue(generation);
+  }
+
+  function setPaused(paused) {
+    isPaused = Boolean(paused);
+    if (!isPaused) recheckVisible();
   }
 
   function typeset(targets) {
@@ -271,7 +277,7 @@ const LatexRuntime = (() => {
     }
   }
 
-  return { typeset, onReady, flushAll, flushSync, hasPendingMath, recheckVisible };
+  return { typeset, onReady, flushAll, flushSync, hasPendingMath, recheckVisible, setPaused };
 })();
 
 window.LatexRuntime = LatexRuntime;

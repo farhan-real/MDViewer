@@ -1,6 +1,6 @@
 /**
  * Simple Code Copy Menu Controller
- * Uses cached code card references, idle-deferred offset refreshes, and jitter-free far jumps.
+ * Uses cached code card references, idle-deferred offset refreshes, and jitter-free jumps.
  */
 const CodeNavigator = (() => {
   let blocks = [];
@@ -62,6 +62,7 @@ const CodeNavigator = (() => {
     awaitingScrollEnd = false;
     expectedEndY = null;
     clearTimeout(scrollReleaseTimer);
+    window.LatexRuntime?.setPaused?.(false);
     refreshOffsets();
   }
 
@@ -154,35 +155,25 @@ const CodeNavigator = (() => {
 
   function scrollToElementCenter(el, token) {
     if (!scrollContainer || !el) return;
-    const initialY = getClampedCenterTop(el);
-    const distance = Math.abs(initialY - scrollContainer.scrollTop);
 
+    const targetChunk = el.closest('.md-chunk');
+    if (targetChunk) targetChunk.style.contentVisibility = 'visible';
+    const targetY = getClampedCenterTop(el);
+    if (targetChunk) targetChunk.style.contentVisibility = '';
+
+    const distance = Math.abs(targetY - scrollContainer.scrollTop);
     if (distance < 2) {
       finishProgrammaticScroll(token);
       return;
     }
 
     if (distance <= scrollContainer.clientHeight * 2.2) {
-      expectedEndY = initialY;
+      expectedEndY = targetY;
       awaitingScrollEnd = true;
-      scrollContainer.scrollTo({ top: initialY, behavior: 'smooth' });
+      scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
     } else {
-      scrollContainer.scrollTop = initialY;
-      requestAnimationFrame(() => {
-        if (token !== activeJumpToken) return;
-        const exactY = getClampedCenterTop(el);
-        const preY = exactY > 40 ? exactY - 40 : exactY;
-        scrollContainer.scrollTop = preY;
-        if (Math.abs(exactY - preY) >= 2) {
-          expectedEndY = exactY;
-          requestAnimationFrame(() => {
-            if (token === activeJumpToken) awaitingScrollEnd = true;
-          });
-          scrollContainer.scrollTo({ top: exactY, behavior: 'smooth' });
-        } else {
-          finishProgrammaticScroll(token);
-        }
-      });
+      scrollContainer.scrollTop = targetY;
+      finishProgrammaticScroll(token);
     }
 
     if (window.scrollY !== 0) window.scrollTo(0, 0);
@@ -224,12 +215,13 @@ const CodeNavigator = (() => {
     const headingId = getHeadingIdForBlock(current);
     const toc = window.TocController || null;
     if (toc) {
-      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(1800);
+      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(1600);
       if (headingId) toc.setActive(headingId, true);
     }
 
     if (el && scrollContainer) {
       window.DocCollapse?.revealElement(el);
+      window.LatexRuntime?.setPaused?.(true);
       activeJumpToken++;
       const token = activeJumpToken;
       isUserScrolling = false;
@@ -251,7 +243,7 @@ const CodeNavigator = (() => {
         if (highlightedCard === el) highlightedCard = null;
       }, 750);
 
-      scrollReleaseTimer = setTimeout(() => finishProgrammaticScroll(token), 1800);
+      scrollReleaseTimer = setTimeout(() => finishProgrammaticScroll(token), 1600);
     }
   }
 
@@ -278,7 +270,7 @@ const CodeNavigator = (() => {
       clearTimeout(scrollReleaseTimer);
       scrollReleaseTimer = setTimeout(() => {
         if (token === activeJumpToken) isUserScrolling = true;
-      }, 1800);
+      }, 1600);
     }
   }
 
