@@ -59,11 +59,10 @@
 .math-inline mjx-container { display: inline-block; vertical-align: middle; margin: 0 0.08em !important; }
 .math-display {
   display: block;
-  margin: 1.35rem 0;
-  padding: 0.85rem 0.65rem;
-  background: #050508;
-  border: 1px solid var(--border-dim);
-  border-radius: var(--radius-md);
+  margin: 1.15rem 0;
+  padding: 0.25rem 0;
+  background: transparent;
+  border: none;
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
