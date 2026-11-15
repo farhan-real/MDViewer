@@ -152,24 +152,6 @@
 
 /* Mobile Layout */
 @media (max-width: 768px) {
-  .toc-sidebar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    margin-left: 0;
-    transform: translateX(-100%);
-    box-shadow: var(--shadow-drawer);
-  }
-
-  .toc-sidebar.open {
-    transform: translateX(0);
-  }
-
-  .sidebar-backdrop.active {
-    display: block;
-  }
-
   .code-copy-menu {
     left: 0.5rem;
     right: 0.5rem;

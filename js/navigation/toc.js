@@ -96,7 +96,7 @@ const TocController = (() => {
             nav.syncToHeadingId(h.id);
           }
 
-          if (window.innerWidth <= 768) {
+          if (window.innerWidth < 1180) {
             document.getElementById('tocSidebar')?.classList.remove('open');
             document.getElementById('sidebarBackdrop')?.classList.remove('active');
           }

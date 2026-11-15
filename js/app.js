@@ -4,6 +4,7 @@
  */
 const App = (() => {
   const STORAGE_KEY = 'mdviewer_document';
+  const DRAWER_BREAKPOINT = 1180;
 
   const viewer = document.getElementById('markdownViewer');
   const pasteModal = document.getElementById('pasteModal');
@@ -103,11 +104,12 @@ const App = (() => {
   }
 
   function toggleSidebar() {
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth < DRAWER_BREAKPOINT) {
       const isOpen = tocSidebar.classList.toggle('open');
       sidebarBackdrop.classList.toggle('active', isOpen);
     } else {
-      tocSidebar.classList.toggle('collapsed');
+      const isCollapsed = tocSidebar.classList.toggle('collapsed');
+      document.body.classList.toggle('sidebar-collapsed', isCollapsed);
     }
   }
 
@@ -161,9 +163,12 @@ const App = (() => {
   });
 
   window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) {
+    if (window.innerWidth >= DRAWER_BREAKPOINT) {
       tocSidebar.classList.remove('open');
       sidebarBackdrop.classList.remove('active');
+    } else {
+      tocSidebar.classList.remove('collapsed');
+      document.body.classList.remove('sidebar-collapsed');
     }
   });
 

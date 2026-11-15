@@ -62,6 +62,8 @@
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
+    transform: none !important;
+    transition: none !important;
     color: var(--text-main) !important;
   }
 
