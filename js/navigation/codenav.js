@@ -8,6 +8,8 @@ const CodeNavigator = (() => {
   let blockTops = [];
   let activeIndex = 0;
   let isUserScrolling = true;
+  let pendingJumpEl = null;
+  let correctionCount = 0;
   let scrollReleaseTimer;
   let highlightTimer;
   let offsetRefreshTimer = null;
@@ -50,6 +52,14 @@ const CodeNavigator = (() => {
     }, 120);
   }
 
+  function finishProgrammaticScroll() {
+    pendingJumpEl = null;
+    correctionCount = 0;
+    isUserScrolling = true;
+    clearTimeout(scrollReleaseTimer);
+    refreshOffsets();
+  }
+
   function attachListeners() {
     if (listenersAttached || !scrollContainer) return;
     listenersAttached = true;
@@ -64,7 +74,17 @@ const CodeNavigator = (() => {
     }, { passive: true });
 
     scrollContainer.addEventListener('scrollend', () => {
-      isUserScrolling = true;
+      if (pendingJumpEl && correctionCount < 2) {
+        const elRect = pendingJumpEl.getBoundingClientRect();
+        const cRect = scrollContainer.getBoundingClientRect();
+        const offset = (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2);
+        if (Math.abs(offset) > 32) {
+          correctionCount++;
+          scrollContainer.scrollTo({ top: Math.max(0, scrollContainer.scrollTop + offset), behavior: 'smooth' });
+          return;
+        }
+      }
+      finishProgrammaticScroll();
     }, { passive: true });
 
     document.addEventListener('mdviewer:typeset', scheduleRefreshOffsets);
@@ -75,6 +95,8 @@ const CodeNavigator = (() => {
     blocks = codeBlockData || [];
     activeIndex = 0;
     highlightedCard = null;
+    pendingJumpEl = null;
+    correctionCount = 0;
 
     if (!blocks.length) {
       menu.style.display = 'none';
@@ -126,23 +148,18 @@ const CodeNavigator = (() => {
 
   function scrollToElementCenter(el) {
     if (!scrollContainer || !el) return;
-    const measureAndScroll = () => {
-      const elRect = el.getBoundingClientRect();
-      const cRect = scrollContainer.getBoundingClientRect();
-      const targetY = scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2);
-      scrollContainer.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
-    };
+    const elRect = el.getBoundingClientRect();
+    const cRect = scrollContainer.getBoundingClientRect();
+    const targetY = Math.max(0, scrollContainer.scrollTop + (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2));
 
-    measureAndScroll();
-    setTimeout(() => {
-      const elRect = el.getBoundingClientRect();
-      const cRect = scrollContainer.getBoundingClientRect();
-      const centerOffset = (elRect.top - cRect.top) - (cRect.height / 2) + (elRect.height / 2);
-      if (Math.abs(centerOffset) > 32) {
-        measureAndScroll();
-      }
-    }, 340);
+    if (Math.abs(targetY - scrollContainer.scrollTop) < 2) {
+      finishProgrammaticScroll();
+      return;
+    }
 
+    pendingJumpEl = el;
+    correctionCount = 0;
+    scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
     if (window.scrollY !== 0) window.scrollTo(0, 0);
   }
 
@@ -182,16 +199,17 @@ const CodeNavigator = (() => {
     updateUI();
 
     const current = blocks[activeIndex];
+    const el = cachedElements[activeIndex] || document.getElementById(current.id);
+    if (!scroll) return;
+
     const headingId = getHeadingIdForBlock(current);
     const toc = window.TocController || null;
-
     if (toc) {
-      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(700);
+      if (typeof toc.lockScrollspy === 'function') toc.lockScrollspy(1400);
       if (headingId) toc.setActive(headingId);
     }
 
-    const el = cachedElements[activeIndex] || document.getElementById(current.id);
-    if (el && scroll && scrollContainer) {
+    if (el && scrollContainer) {
       window.DocCollapse?.revealElement(el);
       isUserScrolling = false;
       clearTimeout(scrollReleaseTimer);
@@ -208,11 +226,9 @@ const CodeNavigator = (() => {
       highlightTimer = setTimeout(() => {
         el.classList.remove('target-highlight');
         if (highlightedCard === el) highlightedCard = null;
-      }, 700);
+      }, 750);
 
-      scrollReleaseTimer = setTimeout(() => {
-        isUserScrolling = true;
-      }, 700);
+      scrollReleaseTimer = setTimeout(finishProgrammaticScroll, 1400);
     }
   }
 
@@ -236,7 +252,7 @@ const CodeNavigator = (() => {
       clearTimeout(scrollReleaseTimer);
       scrollReleaseTimer = setTimeout(() => {
         isUserScrolling = true;
-      }, 700);
+      }, 1400);
     }
   }
 

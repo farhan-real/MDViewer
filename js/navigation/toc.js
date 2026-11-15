@@ -17,6 +17,8 @@ const TocController = (() => {
   let currentActiveId = null;
   let currentFilter = '';
   let isProgrammaticScroll = false;
+  let programmaticTarget = null;
+  let correctionCount = 0;
   let lockTimer = null;
   let listenersAttached = false;
   let rafScheduled = false;
@@ -40,15 +42,18 @@ const TocController = (() => {
     return escapeHtml(rawText).replace(/`([^`]+)`/g, '<code class="toc-code">$1</code>');
   }
 
-  function lockScrollspy(duration = 700) {
+  function lockScrollspy(duration = 1400) {
     isProgrammaticScroll = true;
     clearTimeout(lockTimer);
-    lockTimer = setTimeout(() => { isProgrammaticScroll = false; }, duration);
+    lockTimer = setTimeout(unlockScrollspy, duration);
   }
 
   function unlockScrollspy() {
     isProgrammaticScroll = false;
+    programmaticTarget = null;
+    correctionCount = 0;
     clearTimeout(lockTimer);
+    refreshOffsets();
   }
 
   function refreshOffsets() {
@@ -78,19 +83,18 @@ const TocController = (() => {
 
   function scrollToElementTop(target) {
     if (!scrollContainer || !target) return;
-    const measureAndScroll = () => {
-      const tRect = target.getBoundingClientRect();
-      const cRect = scrollContainer.getBoundingClientRect();
-      const targetY = scrollContainer.scrollTop + (tRect.top - cRect.top) - 20;
-      scrollContainer.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
-    };
+    const tRect = target.getBoundingClientRect();
+    const cRect = scrollContainer.getBoundingClientRect();
+    const targetY = Math.max(0, scrollContainer.scrollTop + (tRect.top - cRect.top) - 20);
 
-    measureAndScroll();
-    setTimeout(() => {
-      const diff = (target.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top) - 20;
-      if (Math.abs(diff) > 28) measureAndScroll();
-    }, 340);
+    if (Math.abs(targetY - scrollContainer.scrollTop) < 2) {
+      unlockScrollspy();
+      return;
+    }
 
+    programmaticTarget = target;
+    correctionCount = 0;
+    scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
     if (window.scrollY !== 0) window.scrollTo(0, 0);
   }
 
@@ -107,7 +111,18 @@ const TocController = (() => {
       });
     }, { passive: true });
 
-    scrollContainer.addEventListener('scrollend', unlockScrollspy, { passive: true });
+    scrollContainer.addEventListener('scrollend', () => {
+      if (programmaticTarget && correctionCount < 2) {
+        const diff = (programmaticTarget.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top) - 20;
+        if (Math.abs(diff) > 28) {
+          correctionCount++;
+          scrollContainer.scrollTo({ top: Math.max(0, scrollContainer.scrollTop + diff), behavior: 'smooth' });
+          return;
+        }
+      }
+      unlockScrollspy();
+    }, { passive: true });
+
     document.addEventListener('mdviewer:typeset', scheduleRefreshOffsets);
     window.addEventListener('resize', scheduleRefreshOffsets, { passive: true });
 
@@ -138,7 +153,7 @@ const TocController = (() => {
     if (!target || !scrollContainer) return;
 
     window.DocCollapse?.revealElement(target);
-    lockScrollspy(700);
+    lockScrollspy(1400);
     setActive(id);
     scrollToElementTop(target);
     history.replaceState(null, '', `#${id}`);
@@ -160,6 +175,7 @@ const TocController = (() => {
     tocNodes = [];
     tocIndexMap.clear();
     currentActiveId = null;
+    programmaticTarget = null;
     counter.textContent = `${headings.length} items`;
 
     if (!headings.length) {
@@ -183,9 +199,8 @@ const TocController = (() => {
       const row = document.createElement('div');
       row.className = `toc-row toc-level-${h.level}`;
 
-      let toggleBtn = null;
       if (hasChildren) {
-        toggleBtn = document.createElement('button');
+        const toggleBtn = document.createElement('button');
         toggleBtn.type = 'button';
         toggleBtn.className = 'toc-toggle-btn';
         toggleBtn.setAttribute('aria-label', 'Toggle subheadings');
@@ -263,7 +278,7 @@ const TocController = (() => {
       const node = tocNodes[nextIdx];
       node.rowEl.classList.add('active');
       if (!node.isHidden) {
-        node.rowEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        node.rowEl.scrollIntoView({ block: 'nearest' });
       }
     }
   }
