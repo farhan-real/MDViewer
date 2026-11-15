@@ -1,34 +1,7 @@
 /**
- * LaTeX & MathJax Engine
- * Configures MathJax v3 for local file:// loading, protects math from Markdown mangling,
- * extracts display blocks, and queues asynchronous SVG typesetting.
+ * LaTeX Extraction & Markdown Protection Engine
+ * Protects inline/display LaTeX from Markdown formatting and table pipe splitting.
  */
-window.MathJax = {
-  tex: {
-    inlineMath: [['$', '$'], ['\\(', '\\)']],
-    displayMath: [['$$', '$$'], ['\\[', '\\]']],
-    processEscapes: true,
-    processEnvironments: true
-  },
-  options: {
-    ignoreHtmlClass: 'tex2jax_ignore',
-    processHtmlClass: 'math-tex',
-    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-  },
-  svg: {
-    fontCache: 'local'
-  },
-  startup: {
-    typeset: false,
-    ready() {
-      window.MathJax.startup.defaultReady();
-      if (window.LatexEngine && typeof window.LatexEngine.onReady === 'function') {
-        window.LatexEngine.onReady();
-      }
-    }
-  }
-};
-
 const LatexEngine = (() => {
   const DISPLAY_ENVS = new Set([
     'equation', 'equation*', 'align', 'align*', 'alignat', 'alignat*',
@@ -42,10 +15,6 @@ const LatexEngine = (() => {
     'matrix', 'pmatrix', 'bmatrix', 'Bmatrix', 'vmatrix', 'Vmatrix',
     'smallmatrix', 'array'
   ]);
-
-  let isReady = false;
-  let pendingTargets = [];
-  let typesetQueue = Promise.resolve();
 
   function escapeHtml(str) {
     return str
@@ -95,6 +64,7 @@ const LatexEngine = (() => {
   function extractInlineMath(str, mathTokens) {
     let out = '';
     let i = 0;
+
     while (i < str.length) {
       if (str[i] === '\\' && (str[i + 1] === '(' || str[i + 1] === '[')) {
         const closeSeq = str[i + 1] === '(' ? '\\)' : '\\]';
@@ -136,6 +106,7 @@ const LatexEngine = (() => {
       out += str[i];
       i++;
     }
+
     return out;
   }
 
@@ -215,6 +186,7 @@ const LatexEngine = (() => {
     const envName = envMatch ? envMatch[1] : '';
     const isOuterEnv = DISPLAY_ENVS.has(envName);
     const isInnerEnv = INNER_MATH_ENVS.has(envName);
+
     if (isOuterEnv || isInnerEnv) {
       const endTag = `\\end{${envName}}`;
       if (trimmed.endsWith(endTag)) {
@@ -240,9 +212,11 @@ const LatexEngine = (() => {
       dummyTokens.push(m);
       return `\uE000T${idx}\uE001`;
     });
+
     const mathRaw = [];
     let i = 0;
     let rebuilt = '';
+
     while (i < masked.length) {
       if (masked[i] === '\\' && masked[i + 1] === '(') {
         const end = findClosingBackslash(masked, i + 2, '\\)');
@@ -274,38 +248,10 @@ const LatexEngine = (() => {
   }
 
   function typeset(targets) {
-    const elements = (Array.isArray(targets) ? targets : [targets]).filter(Boolean);
-    if (!elements.length) return Promise.resolve();
-
-    if (!isReady || !window.MathJax || typeof window.MathJax.typesetPromise !== 'function') {
-      pendingTargets = elements;
-      return Promise.resolve();
-    }
-
-    typesetQueue = typesetQueue
-      .then(() => {
-        if (typeof window.MathJax.typesetClear === 'function') {
-          window.MathJax.typesetClear(elements);
-        }
-        return window.MathJax.typesetPromise(elements);
-      })
-      .catch((err) => {
-        console.warn('MathJax typeset warning:', err);
-      });
-
-    return typesetQueue;
+    return window.LatexRuntime ? window.LatexRuntime.typeset(targets) : Promise.resolve();
   }
 
-  function onReady() {
-    isReady = true;
-    if (pendingTargets.length) {
-      const targets = pendingTargets;
-      pendingTargets = [];
-      typeset(targets);
-    }
-  }
-
-  return { formatInline, renderDisplayBlock, consumeDisplayBlock, splitTableRow, typeset, onReady };
+  return { formatInline, renderDisplayBlock, consumeDisplayBlock, splitTableRow, typeset };
 })();
 
 window.LatexEngine = LatexEngine;
