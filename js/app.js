@@ -15,6 +15,7 @@ const App = (() => {
   const clearEditorBtn = document.getElementById('clearEditorBtn');
   const pasteClipboardBtn = document.getElementById('pasteClipboardBtn');
   const sampleBtn = document.getElementById('sampleBtn');
+  const printBtn = document.getElementById('printBtn');
   const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
   const tocSidebar = document.getElementById('tocSidebar');
   const tocContainer = document.getElementById('tocContainer');
@@ -124,6 +125,12 @@ const App = (() => {
     renderMarkdownContent(sample, true);
     showToast('Loaded sample documentation');
   });
+
+  if (printBtn) {
+    printBtn.addEventListener('click', () => {
+      window.print();
+    });
+  }
 
   applyEditorBtn.addEventListener('click', () => {
     const content = markdownInput.value;

@@ -6,13 +6,14 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <title>MDViewer - Professional Offline Markdown Viewer</title>
-  <link rel="stylesheet" href="css/themes.css?v=2.6">
-  <link rel="stylesheet" href="css/base.css?v=2.6">
-  <link rel="stylesheet" href="css/ui/sidebar.css?v=2.6">
-  <link rel="stylesheet" href="css/ui/components.css?v=2.6">
-  <link rel="stylesheet" href="css/ui/modals.css?v=2.6">
-  <link rel="stylesheet" href="css/ui/overlays.css?v=2.6">
-  <link rel="stylesheet" href="css/syntax.css?v=2.6">
+  <link rel="stylesheet" href="css/themes.css?v=2.7">
+  <link rel="stylesheet" href="css/base.css?v=2.7">
+  <link rel="stylesheet" href="css/ui/sidebar.css?v=2.7">
+  <link rel="stylesheet" href="css/ui/components.css?v=2.7">
+  <link rel="stylesheet" href="css/ui/modals.css?v=2.7">
+  <link rel="stylesheet" href="css/ui/overlays.css?v=2.7">
+  <link rel="stylesheet" href="css/syntax.css?v=2.7">
+  <link rel="stylesheet" href="css/print.css?v=2.7">
 </head>
 <body class="dark-theme">
   <header class="app-header">
@@ -42,6 +43,13 @@
 
     <div class="header-right">
       <button id="sampleBtn" class="btn ghost-btn" title="Load sample document">Load Sample</button>
+      <button id="printBtn" class="icon-btn" aria-label="Print or Save as PDF" title="Print / Save as PDF (Ctrl+P)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+      </button>
       <button id="themeToggleBtn" class="icon-btn" aria-label="Switch to light theme" title="Switch to light theme">
         <svg class="theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="4"></circle>
@@ -224,16 +232,16 @@
   <div id="toastNotification" class="toast-notification" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="js/theme.js?v=2.6"></script>
-  <script src="js/latex/mathjax.js?v=2.6"></script>
+  <script src="js/theme.js?v=2.7"></script>
+  <script src="js/latex/mathjax.js?v=2.7"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js"></script>
-  <script src="js/latex/latex.js?v=2.6"></script>
-  <script src="js/sample.js?v=2.6"></script>
-  <script src="js/markdown/highlighter.js?v=2.6"></script>
-  <script src="js/markdown/parser.js?v=2.6"></script>
-  <script src="js/navigation/toc.js?v=2.6"></script>
-  <script src="js/navigation/codenav.js?v=2.6"></script>
-  <script src="js/shortcuts.js?v=2.6"></script>
-  <script src="js/app.js?v=2.6"></script>
+  <script src="js/latex/latex.js?v=2.7"></script>
+  <script src="js/sample.js?v=2.7"></script>
+  <script src="js/markdown/highlighter.js?v=2.7"></script>
+  <script src="js/markdown/parser.js?v=2.7"></script>
+  <script src="js/navigation/toc.js?v=2.7"></script>
+  <script src="js/navigation/codenav.js?v=2.7"></script>
+  <script src="js/shortcuts.js?v=2.7"></script>
+  <script src="js/app.js?v=2.7"></script>
 </body>
 </html>

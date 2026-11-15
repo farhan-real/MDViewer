@@ -1,0 +1,219 @@
+/* Print Support: A4 Portrait & Landscape, Theme-Independent Clean Paper Output */
+@page {
+  size: auto;
+  margin: 14mm;
+}
+
+@media print {
+  :root,
+  body,
+  body.dark-theme,
+  body.light-theme {
+    color-scheme: light !important;
+
+    --bg-core: #ffffff;
+    --bg-card: #ffffff;
+    --bg-code-header: #f1f5f9;
+    --bg-code-body: #f8fafc;
+    --bg-elevated: #f1f5f9;
+    --bg-code-inline: #eef2ff;
+    --bg-blockquote: #f8fafc;
+    --bg-table-head: #f1f5f9;
+    --bg-table-stripe: #f8fafc;
+
+    --border-dim: #cbd5e1;
+    --border-mid: #94a3b8;
+
+    --accent-primary: #4338ca;
+    --accent-surface: #eef2ff;
+    --accent-border: #c7d2fe;
+
+    --text-strong: #09090b;
+    --text-main: #18181b;
+    --text-body: #18181b;
+    --text-muted: #3f3f46;
+    --text-faint: #52525b;
+    --text-link: #3730a3;
+    --text-code: #0f172a;
+    --text-code-inline: #3730a3;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    position: static !important;
+    inset: auto !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    background: #ffffff !important;
+    color: #18181b !important;
+    font-size: 10.5pt !important;
+    line-height: 1.55 !important;
+  }
+
+  /* Hide non-document UI and trailing scroll spacer */
+  .app-header,
+  .toc-sidebar,
+  .sidebar-backdrop,
+  .code-copy-menu,
+  .code-block-copy,
+  .modal-backdrop,
+  .toast-notification,
+  .doc-end-spacer {
+    display: none !important;
+  }
+
+  /* Unlock full-document flow across pages */
+  .app-body,
+  .viewer-workspace {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .markdown-viewer {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    color: #18181b !important;
+  }
+
+  .markdown-viewer > :first-child {
+    margin-top: 0 !important;
+  }
+
+  /* Headings & Pagination Safety */
+  .markdown-viewer h1,
+  .markdown-viewer h2,
+  .markdown-viewer h3,
+  .markdown-viewer h4 {
+    color: #09090b !important;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .markdown-viewer p {
+    color: #18181b !important;
+    orphans: 3;
+    widows: 3;
+  }
+
+  .markdown-viewer ul,
+  .markdown-viewer ol {
+    color: #18181b !important;
+  }
+
+  .markdown-viewer blockquote {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background: #f8fafc !important;
+    color: #3f3f46 !important;
+  }
+
+  /* Tables: avoid row clipping and repeat headers across page breaks */
+  .markdown-viewer table {
+    width: 100% !important;
+    overflow: visible !important;
+    font-size: 9.5pt !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  .markdown-viewer thead {
+    display: table-header-group;
+  }
+
+  .markdown-viewer tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .markdown-viewer th,
+  .markdown-viewer td {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* LaTeX & MathJax SVG scaling for Portrait & Landscape */
+  .math-display {
+    overflow: visible !important;
+    max-width: 100% !important;
+    margin: 0.85rem 0 !important;
+    padding: 0.15rem 0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .math-display mjx-container,
+  .math-display mjx-container svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .markdown-viewer mjx-container svg {
+    color: inherit !important;
+  }
+
+  /* Code Cards: wrap long lines instead of clipping */
+  .code-card {
+    overflow: visible !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #f8fafc !important;
+    margin: 1rem 0 !important;
+  }
+
+  .code-header-bar {
+    background: #f1f5f9 !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .code-name-label {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    color: #09090b !important;
+  }
+
+  .code-body-wrap {
+    overflow: visible !important;
+    padding: 0.65rem 0.85rem !important;
+    font-size: 8.5pt !important;
+    line-height: 1.45 !important;
+    color: #0f172a !important;
+  }
+
+  .code-body-wrap pre {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+
+  /* Ensure light syntax token colors print clearly even from Dark Mode */
+  body .token-keyword { color: #4f46e5 !important; }
+  body .token-builtin { color: #7c3aed !important; }
+  body .token-string { color: #059669 !important; }
+  body .token-comment { color: #64748b !important; }
+  body .token-number { color: #d97706 !important; }
+  body .token-boolean { color: #db2777 !important; }
+  body .token-function { color: #2563eb !important; }
+  body .token-property { color: #4338ca !important; }
+  body .token-operator { color: #475569 !important; }
+  body .token-punctuation { color: #64748b !important; }
+  body .token-tag { color: #dc2626 !important; }
+  body .token-attr { color: #0284c7 !important; }
+  body .token-regex { color: #b45309 !important; }
+  body .token-variable { color: #1e293b !important; }
+}
