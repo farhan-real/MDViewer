@@ -133,11 +133,16 @@
   line-height: 1.55;
   resize: vertical;
   outline: none;
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
-.dialog-body textarea:focus {
+.dialog-body textarea:focus,
+.dialog-body textarea.drag-over {
   border-color: var(--accent-primary);
+}
+
+.dialog-body textarea.drag-over {
+  background: var(--accent-surface);
 }
 
 .dialog-footer {
@@ -191,6 +196,15 @@
   .dialog-header,
   .dialog-footer {
     padding: 0.8rem 0.95rem;
+  }
+
+  .dialog-header {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .dialog-header-actions {
+    gap: 0.4rem;
   }
 
   .dialog-body {

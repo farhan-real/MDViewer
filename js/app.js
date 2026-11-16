@@ -276,3 +276,5 @@ const App = (() => {
 
   return { showToast, triggerRender, triggerClose };
 })();
+
+window.App = App;
